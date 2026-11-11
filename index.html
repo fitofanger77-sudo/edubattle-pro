@@ -4005,7 +4005,13 @@ function renderQuizEditor() {
 
     // 👇 이전 화면 완벽하게 닫고 로비만 열기
     document.getElementById('setupWrap')?.classList.add('hidden');
-    document.getElementById('hostFullscreenOverlay').classList.remove('hidden');
+    
+    // 🛡️ [버그 수정] 종료 시 걸려있던 display: none 속성을 flex로 강제 복구해야 다음 퀴즈 시작 시 뻗지 않습니다!
+    const hostOverlay = document.getElementById('hostFullscreenOverlay');
+    if (hostOverlay) {
+      hostOverlay.classList.remove('hidden');
+      hostOverlay.style.display = 'flex'; 
+    }
     
     ['hostQuestionView', 'hostResultOverlay', 'formativeVictoryOverlay', 'formativeTopBar', 'liveBattleTopBar'].forEach(id => {
       const el = document.getElementById(id);
@@ -4665,7 +4671,6 @@ function addSimulatedStudents(count = 5) {
   };
 
 
-// ⏱️ 제한 시간 종료 시 정답 구역 판정 & 속도/콤보/상태(유령, 해골, 천사) 갱신
 function evaluateSurvivalArenaRound() {
     if (currentGameMode !== 'accuracy') return;
     const q = normalizeQuestionObject(quizQuestions[currentQuestionIndex] || {});
@@ -4721,31 +4726,33 @@ function evaluateSurvivalArenaRound() {
         }
       }
 
+      // 봇이 아니면 정오답 기록 및 오답노트 필터링 처리
       if (!p.isBot) {
         const zoneLabel = isOx ? (zoneIdx === 0 ? '⭕ 참(O)' : '❌ 거짓(X)') : `${['A', 'B', 'C', 'D'][zoneIdx]}구역 (${q.options[zoneIdx] || ''})`;
         if (typeof recordRealStudentAnswer === 'function') {
           recordRealStudentAnswer(p.id, p.name, p.avatar, currentQuestionIndex, zoneIdx, isCorrect, zoneLabel);
         }
         
-        // 👇 [규칙 3 적용] 서바이벌 조이스틱 문제는 오답노트에 반영되지 않도록 강제 삭제!
         if (!isCorrect && db && currentPin) {
           db.ref(`rooms/${currentPin}/players/${p.id}/incorrectAnswers/${currentQuestionIndex}`).remove();
           db.ref(`rooms/${currentPin}/players/${p.id}/wrongAnswers/${currentQuestionIndex}`).remove();
           if (p.incorrectAnswers) delete p.incorrectAnswers[currentQuestionIndex];
           if (p.wrongAnswers) delete p.wrongAnswers[currentQuestionIndex];
         }
+      }
 
-        if (db && currentPin) {
-          db.ref(`rooms/${currentPin}/players/${p.id}`).update({
-            score: p.score || 0,
-            comboStreak: p.comboStreak || 0,
-            maxComboStreak: p.maxComboStreak || 0,
-            wrongStreak: p.wrongStreak || 0,
-            survivalState: p.survivalState || 'alive',
-            hasBeenSkull: Boolean(p.hasBeenSkull),
-            lastCorrectQ: p.lastCorrectQ ?? -1
-          });
-        }
+      // 봇이든 학생이든 최종 체력 및 콤보/점수를 DB에 강제 반영 (점수판 오류 방지)
+      if (db && currentPin) {
+        db.ref(`rooms/${currentPin}/players/${p.id}`).update({
+          score: p.score || 0,
+          comboStreak: p.comboStreak || 0,
+          maxComboStreak: p.maxComboStreak || 0,
+          wrongStreak: p.wrongStreak || 0,
+          survivalState: p.survivalState || 'alive',
+          hasBeenSkull: Boolean(p.hasBeenSkull),
+          lastCorrectQ: p.lastCorrectQ ?? -1,
+          isBot: Boolean(p.isBot)
+        });
       }
     });
   }
@@ -5666,7 +5673,7 @@ damageBoss(dmg, attackerPlayer) {
     }
   };
   
-  function updateSubmissionProgressUI() {
+function updateSubmissionProgressUI() {
     const allPlayers = Object.values(roomState.players || {});
     const realPlayers = allPlayers.filter(p => !p.isBot && p.online !== false);
     const targetList = realPlayers.length > 0 ? realPlayers : allPlayers;
@@ -5677,7 +5684,11 @@ damageBoss(dmg, attackerPlayer) {
     document.getElementById('hostSubmitCountText').textContent = realPlayers.length > 0 ? `실제 학생 ${submitted} / ${total}명 제출` : `${submitted} / ${total}명 제출`;
     document.getElementById('hostSubmitProgressBar').style.width = `${pct}%`;
 
-    if (currentGameMode !== 'formative' && currentGameMode !== 'unplugged' && currentGameMode !== 'accuracy' && roomState.status === 'question' && total > 0 && submitted >= total && !roundAutoClosing) {
+    // 서바이벌 모드더라도 단답형/퍼즐형은 학생들이 개별 제출하므로 조기 마감이 작동해야 함
+    const q = quizQuestions[currentQuestionIndex] || {};
+    const isSurvActionType = (currentGameMode === 'accuracy' || serverJoystickModeFlag) && (q.q_type !== 'short' && q.q_type !== 'puzzle');
+
+    if (currentGameMode !== 'formative' && currentGameMode !== 'unplugged' && !isSurvActionType && roomState.status === 'question' && total > 0 && submitted >= total && !roundAutoClosing) {
       roundAutoClosing = true;
       clearInterval(timerInterval);
       setTimeout(() => { if (roomState.status === 'question') revealAnswerAndLeaderboard(false); }, 400);
@@ -6481,9 +6492,14 @@ timerInterval = setInterval(() => {
   }
 
 
-  function triggerSimulatedBotsForRound() {
+function triggerSimulatedBotsForRound() {
     const targetQ = currentQuestionIndex;
     const q = quizQuestions[targetQ];
+    
+    // 서바이벌 조이스틱 이동 모드일 때는 봇 스스로 움직이므로 자동 정산 생략
+    const isSurvActionType = (currentGameMode === 'accuracy' || serverJoystickModeFlag) && (q.q_type !== 'short' && q.q_type !== 'puzzle');
+    if (isSurvActionType) return;
+
     Object.values(roomState.players || {}).filter(p => p.isBot).forEach((p) => {
       setTimeout(() => {
         if (roomState.status !== "question" || roomState.currentQIndex !== targetQ || !q) return;
@@ -7446,7 +7462,7 @@ else if (currentGameMode === 'kingdom') {
     requestAnimationFrame(step);
   }
 
-  function renderAnimatedLeaderboard() {
+function renderAnimatedLeaderboard() {
     lbSwapTimeouts.forEach(t => clearTimeout(t)); 
     lbSwapTimeouts = [];
     
@@ -7461,9 +7477,63 @@ else if (currentGameMode === 'kingdom') {
       return;
     }
 
+    // 🎯 [신규 추가] 정답구역 서바이벌(No Brain Survival) 모드 전용 30인 생존 현황판
+    if (currentGameMode === 'accuracy') {
+      const rightColTitle = document.querySelector('#actionStageRightCol h4');
+      if (rightColTitle) rightColTitle.textContent = "🏆 서바이벌 생존 현황 (전체 콤보 순)";
+
+      if (phaseText) phaseText.textContent = "✔ 이번 라운드 생존 및 탈락 결과";
+      document.getElementById('btnLbTop5')?.classList.add('hidden');
+      document.getElementById('btnLbAll')?.classList.add('hidden');
+      
+      if (lbList) lbList.style.display = 'none';
+      if (lbAllList) {
+        lbAllList.classList.remove('hidden');
+        lbAllList.style.display = '';
+        // 30명 전원이 다 보이도록 다단 그리드 설정
+        lbAllList.className = "grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2 h-[270px] overflow-y-auto pr-1 pb-2";
+
+        const sortedSurv = [...allPlayers].sort((a, b) => {
+          const aSurv = a.lastCorrectQ === currentQuestionIndex ? 1 : 0;
+          const bSurv = b.lastCorrectQ === currentQuestionIndex ? 1 : 0;
+          if (aSurv !== bSurv) return bSurv - aSurv;
+          return (b.comboStreak || 0) - (a.comboStreak || 0);
+        });
+
+        lbAllList.innerHTML = sortedSurv.map(p => {
+          const isSurv = p.lastCorrectQ === currentQuestionIndex;
+          const combo = p.comboStreak || 0;
+          // 생존자는 밝은 초록색 테두리, 탈락자는 어두운 붉은색에 취소선
+          const bgClass = isSurv ? 'bg-emerald-950/60 border-emerald-500' : 'bg-rose-950/30 border-rose-500/30 opacity-60';
+          const textClass = isSurv ? 'text-emerald-300' : 'text-rose-400 line-through';
+          const icon = isSurv ? '⭕' : '💀';
+          
+          return `
+            <div class="flex flex-col items-center justify-center py-2 px-1 rounded-xl border-2 ${bgClass} shadow-sm transition-all hover:scale-105">
+              <div class="text-2xl">${p.avatar || '😀'}</div>
+              <div class="text-[10px] font-black ${textClass} truncate w-full text-center mt-1">${escapeHtml(p.name)}</div>
+              <div class="text-[10px] font-black text-amber-300 mt-0.5">${icon} ${combo}콤보</div>
+            </div>
+          `;
+        }).join('');
+      }
+      return;
+    }
+
+    // =========================================================
+    // 👇 아래는 서바이벌이 아닌 일반 모드(클래식, 몬스터퇴치 등)의 기존 TOP 5 교차 랭킹 처리 로직
+    // =========================================================
+    const rightColTitle = document.querySelector('#actionStageRightCol h4');
+    if (rightColTitle) rightColTitle.textContent = "🏆 실시간 순위 변동 (점수 합산 & 순위 교차)";
+
+    document.getElementById('btnLbTop5')?.classList.remove('hidden');
+    document.getElementById('btnLbAll')?.classList.remove('hidden');
+    if (lbList) lbList.style.display = 'block';
+
     const sortedNewAll = [...allPlayers].sort((a, b) => (b.score || 0) - (a.score || 0));
     
     if (lbAllList) {
+      lbAllList.className = "hidden h-[270px] overflow-y-auto space-y-1.5 pr-1";
       lbAllList.innerHTML = sortedNewAll.map((p, idx) => `
         <div class="flex justify-between items-center bg-slate-900 px-3.5 py-2 rounded-xl border border-slate-800 text-xs font-bold">
           <span>${idx + 1}위 ${p.avatar || '🦖'} ${escapeHtml(p.name)}</span>
@@ -7483,37 +7553,33 @@ else if (currentGameMode === 'kingdom') {
 
       const row = document.createElement('div');
       row.className = "lb-row-card flex justify-between items-center bg-slate-800 px-4 rounded-xl font-black text-sm border border-slate-700 shadow-md transition-all";
-      // 이전 순위 위치에서 시작
       row.style.transform = `translateY(${(startRank - 1) * SLOT_HEIGHT}px)`;
       
       const rankBadge = finalIdx === 0 ? '👑 1위' : `${finalIdx + 1}위`;
+      
+      // 🐛 이름이 사라지던 버그 수정: flex-1과 truncate를 조합하여 영역을 보장함
       row.innerHTML = `
-        <div class="flex items-center gap-2">
-          <span class="lb-rank-num text-xs ${finalIdx === 0 ? 'text-amber-300' : 'text-slate-300'}">${rankBadge}</span>
-          <span>${p.avatar || '🦖'}</span>
-          <span class="truncate max-w-[140px] text-white">${escapeHtml(p.name)}</span>
+        <div class="flex items-center gap-2 flex-1 min-w-0">
+          <span class="lb-rank-num text-xs ${finalIdx === 0 ? 'text-amber-300' : 'text-slate-300'} w-8 shrink-0">${rankBadge}</span>
+          <span class="text-xl shrink-0">${p.avatar || '🦖'}</span>
+          <span class="truncate text-white font-black flex-1 mr-2">${escapeHtml(p.name)}</span>
         </div>
-        <span class="score-display text-amber-400 text-sm font-black">${snap.score.toLocaleString()}점</span>
+        <span class="score-display text-amber-400 text-sm font-black shrink-0">${snap.score.toLocaleString()}점</span>
       `;
       if (lbList) lbList.appendChild(row);
 
       const scoreEl = row.querySelector('.score-display');
 
-      // 1단계: 0.3초 후 점수 합산 카운트업
       lbSwapTimeouts.push(setTimeout(() => {
         if (scoreEl) animateScoreCounter(scoreEl, snap.score, p.score || 0, 700);
       }, 300));
 
-      // 2단계: 0.7초 후 새로운 순위 위치로 위아래 부드럽게 교차 슬라이딩
       lbSwapTimeouts.push(setTimeout(() => {
         row.style.transform = `translateY(${finalIdx * SLOT_HEIGHT}px)`;
-        SoundFX.playRankSwap();
+        try { SoundFX.playRankSwap(); } catch(e){}
 
-        if (isRankUp) {
-          row.classList.add('rank-up-glow');
-        } else if (isRankDown) {
-          row.classList.add('rank-down-dim');
-        }
+        if (isRankUp) row.classList.add('rank-up-glow');
+        else if (isRankDown) row.classList.add('rank-down-dim');
         if (finalIdx === 0) row.classList.add('rank-top1-crown');
 
         if (phaseText) phaseText.textContent = "✔ 이번 라운드 순위 변동 완료!";
