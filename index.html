@@ -813,14 +813,29 @@
           <div class="text-xs font-bold text-slate-400">화면을 자유롭게 문질러 숨겨진 명화를 복원하세요!</div>
         </div>
 
-        <!-- 🪢 [신규 추가] 홍팀청팀 줄다리기 10초 광클(+1점) 패드 -->
+<!-- 🪢 홍팀청팀 줄다리기 10초 광클(+1점) 패드 및 이모티콘/채팅 -->
         <div id="studentTugTapBox" class="hidden flex-col items-center gap-3 w-full bg-slate-900 p-5 rounded-3xl border-4 border-amber-400 shadow-2xl">
           <div id="stuTugTeamBadge" class="text-sm font-black px-4 py-1 rounded-full bg-rose-600 text-white">🔴 홍팀 대원</div>
           <div class="text-lg font-black text-amber-300 animate-bounce">⏱️ 10초 동안 버튼을 연타해 줄을 당기세요!</div>
-          <button type="button" onclick="sendStudentTugTap()" class="w-full py-10 rounded-3xl bg-gradient-to-b from-amber-400 via-orange-500 to-rose-600 active:scale-95 text-slate-950 font-black text-3xl shadow-2xl border-4 border-white transition transform">
+          <button type="button" onclick="sendStudentTugTap()" class="w-full py-9 rounded-3xl bg-gradient-to-b from-amber-400 via-orange-500 to-rose-600 active:scale-95 text-slate-950 font-black text-3xl shadow-2xl border-4 border-white transition transform select-none touch-manipulation">
             🪢 영차! 당기기! (+1점)
           </button>
-          <div class="text-xs font-bold text-slate-300">내 연타 횟수: <span id="stuTugTapCount" class="text-amber-400 font-black text-base">0</span>회</div>
+          <div class="text-xs font-bold text-slate-300">이번 라운드 내 연타: <span id="stuTugTapCount" class="text-amber-400 font-black text-base">0</span>회</div>
+          
+          <div class="w-full space-y-2 pt-2.5 border-t border-slate-700/80">
+            <div class="flex justify-between items-center gap-1.5">
+              <button type="button" onclick="sendStudentChat('🔥', true)" class="flex-1 py-1.5 bg-slate-950 hover:bg-slate-800 rounded-xl text-xl border border-slate-700 active:scale-90">🔥</button>
+              <button type="button" onclick="sendStudentChat('💪', true)" class="flex-1 py-1.5 bg-slate-950 hover:bg-slate-800 rounded-xl text-xl border border-slate-700 active:scale-90">💪</button>
+              <button type="button" onclick="sendStudentChat('💦', true)" class="flex-1 py-1.5 bg-slate-950 hover:bg-slate-800 rounded-xl text-xl border border-slate-700 active:scale-90">💦</button>
+              <button type="button" onclick="sendStudentChat('😂', true)" class="flex-1 py-1.5 bg-slate-950 hover:bg-slate-800 rounded-xl text-xl border border-slate-700 active:scale-90">😂</button>
+              <button type="button" onclick="sendStudentChat('🎉', true)" class="flex-1 py-1.5 bg-slate-950 hover:bg-slate-800 rounded-xl text-xl border border-slate-700 active:scale-90">🎉</button>
+              <button type="button" onclick="sendStudentChat('😭', true)" class="flex-1 py-1.5 bg-slate-950 hover:bg-slate-800 rounded-xl text-xl border border-slate-700 active:scale-90">😭</button>
+            </div>
+            <div class="flex gap-1.5">
+              <input type="text" id="studentTugChatInput" maxlength="20" placeholder="줄다리기 응원 한마디 (최대 20자)" onkeydown="if(event.key==='Enter') submitStudentTugTextChat()" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none focus:border-amber-400">
+              <button type="button" onclick="submitStudentTugTextChat()" class="bg-[#4d49fc] hover:opacity-90 text-white px-3.5 py-2 rounded-xl text-xs font-black shrink-0">전송</button>
+            </div>
+          </div>
         </div>
       </div>
     </main>
@@ -4023,8 +4038,8 @@ function renderQuizEditor() {
     if (!isFormative && !isUnplugged) {
       const joyParam = (currentGameMode === 'accuracy') ? '&joy=1' : '';
       let joinUrl = `${window.location.origin}${window.location.pathname}?pin=${currentPin}&mode=${encodeURIComponent(currentGameMode)}${joyParam}`;
-      if (window.location.protocol === 'file:') {
-        joinUrl = `https://edubattle-pro.netlify.app/?pin=${currentPin}&mode=${encodeURIComponent(currentGameMode)}${joyParam}`;
+if (window.location.protocol === 'file:') {
+        joinUrl = `https://fitofanger77-sudo.github.io/edubattle-pro/?pin=${currentPin}&mode=${encodeURIComponent(currentGameMode)}${joyParam}`;
       }
 
       const qrBox = document.getElementById('qrcodeBox'); 
@@ -4044,54 +4059,38 @@ function renderQuizEditor() {
     roomState = { status: "lobby", currentQIndex: -1, qStartTime: 0, gameMode: currentGameMode, players: {} };
     updateLobbyPlayersUI();
 
-// 로비 엔진 시작 (봇들이 천천히 거니는 루프 가동)
     if (typeof LobbyArenaEngine !== 'undefined' && LobbyArenaEngine.start) {
       LobbyArenaEngine.start();
     } else if (typeof LobbyEngine !== 'undefined' && LobbyEngine.start) {
       LobbyEngine.start();
-    } else if (typeof LobbyEngine !== 'undefined' && LobbyEngine.init) {
-      LobbyEngine.init();
     }
 
     if (db && currentPin) {
+      // 🛡️ 이전 리스너 잔류 원천 차단
+      db.ref(`rooms/${currentPin}/players`).off();
+      db.ref(`rooms/${currentPin}/answers`).off();
+      db.ref(`rooms/${currentPin}/mp_strokes`).off();
+
       db.ref(`rooms/${currentPin}`).remove().then(() => {
         syncRoomState();
       });
 
       db.ref(`rooms/${currentPin}/players`).on('value', snapshot => {
+        if (!isHostingActive) return;
         const remotePlayers = snapshot.val() || {};
         const bots = {};
         Object.keys(roomState.players).forEach(k => {
           if (roomState.players[k].isBot) bots[k] = roomState.players[k];
         });
 
-        // ✅ [신규 해결] 학생 접속 시 로비 좌표 자동 보정 및 홍팀/청팀 인원 균등 배정
-        const allCurrent = { ...bots, ...remotePlayers };
-        let redCnt = 0, blueCnt = 0;
-        Object.values(allCurrent).forEach(p => {
-          if (p.team === 'BLUE') blueCnt++;
-          else if (p.team === 'RED') redCnt++;
-        });
-
         Object.keys(remotePlayers).forEach(k => {
           const rp = remotePlayers[k];
           const prevLocal = roomState.players[k];
 
-          // 1) 좌표가 없거나 범위 밖이면 로비 중앙 영역에 즉시 생성
           if (rp.x === undefined || rp.y === undefined || isNaN(rp.x)) {
             rp.x = prevLocal?.x || (140 + Math.random() * 600);
             rp.y = prevLocal?.y || (60 + Math.random() * 140);
           }
-
-          // 2) 처음 입장한 학생이면 홍팀/청팀 인원수를 비교해 적은 팀으로 자동 배정
-          if (!prevLocal && !rp.teamFixed) {
-            rp.team = (redCnt <= blueCnt) ? 'RED' : 'BLUE';
-            rp.teamFixed = true;
-            if (rp.team === 'RED') redCnt++; else blueCnt++;
-            db.ref(`rooms/${currentPin}/players/${k}`).update({ team: rp.team, teamFixed: true, x: rp.x, y: rp.y });
-          }
-
-          // 3) 보스 레이드 중 체력 덮어쓰기 방지
           if (roomState.status === 'boss_raid' && prevLocal && prevLocal.rpgStats) {
             rp.rpgStats = prevLocal.rpgStats;
             rp.isGhost = prevLocal.isGhost;
@@ -4099,14 +4098,17 @@ function renderQuizEditor() {
         });
 
         roomState.players = { ...bots, ...remotePlayers };
-        updateLobbyPlayersUI();
 
-        // 로비 상태인데 렌더 루프가 멈춰 있다면 즉시 재가동하여 캐릭터 표시 보장
+        // ⚖️ [5:5 강제 균등 배정] 접속자(학생+봇)를 ID순으로 정렬 후 짝수/홀수 인덱스로 정확히 반반 배정!
+        rebalanceTeamsEqually();
+
+        updateLobbyPlayersUI();
+        if (typeof updateSubmissionProgressUI === 'function') updateSubmissionProgressUI();
+
         if (roomState.status === 'lobby' && typeof LobbyArenaEngine !== 'undefined') {
           LobbyArenaEngine.start();
         }
-        if(typeof updateSubmissionProgressUI === 'function') updateSubmissionProgressUI();
-// ✅ 봇 이모티콘 리액션 (p 변수 정의 오류 해결)
+
         const botKeys = Object.keys(roomState.players).filter(k => roomState.players[k].isBot);
         if (botKeys.length > 0 && Math.random() < 0.04) {
           const targetKey = botKeys[Math.floor(Math.random() * botKeys.length)];
@@ -4121,6 +4123,7 @@ function renderQuizEditor() {
       });
 
       db.ref(`rooms/${currentPin}/answers`).on('child_added', snapshot => {
+        if (!isHostingActive || roomState.status !== 'question') return;
         const ans = snapshot.val();
         if (ans && ans.qIdx === currentQuestionIndex && typeof roundSubmittedUsers !== 'undefined' && !roundSubmittedUsers.has(ans.stuId)) {
           roundSubmittedUsers.add(ans.stuId);
@@ -4138,6 +4141,7 @@ function renderQuizEditor() {
       });
 
       db.ref(`rooms/${currentPin}/mp_strokes`).on('child_added', snapshot => {
+        if (!isHostingActive) return;
         const stroke = snapshot.val();
         if (stroke) {
           if (!coopState.mpStrokes) coopState.mpStrokes = [];
@@ -4152,6 +4156,26 @@ function renderQuizEditor() {
       });
     }
   } // ◀ openGameLobby() 끝
+
+  // ⚖️ [신규 헬퍼 함수] 전체 인원(학생+봇)을 무조건 5:5(홍팀=청팀)로 정확히 나누는 함수
+  function rebalanceTeamsEqually() {
+    const allList = Object.values(roomState.players || {}).filter(p => p.online !== false);
+    // 실제 학생 먼저, 그 다음 봇 순서로 정렬하여 학생들끼리도 5:5가 되도록 보장
+    allList.sort((a, b) => {
+      if (Boolean(a.isBot) !== Boolean(b.isBot)) return a.isBot ? 1 : -1;
+      return String(a.id).localeCompare(String(b.id));
+    });
+    allList.forEach((p, idx) => {
+      const targetTeam = (idx % 2 === 0) ? 'RED' : 'BLUE';
+      if (p.team !== targetTeam) {
+        p.team = targetTeam;
+        if (!p.isBot && db && currentPin && isHostingActive) {
+          db.ref(`rooms/${currentPin}/players/${p.id}/team`).set(targetTeam);
+        }
+      }
+    });
+  }
+
 
 // 💬 말풍선 및 이모티콘 3초 유지 & 페이드아웃 공용 렌더러
   function drawPlayerChatBubble(ctx, player, x, y) {
@@ -4281,6 +4305,7 @@ function addSimulatedStudents(count = 5) {
         isBot: true, lastCorrectQ: -1, lastAnsweredQ: -1
       };
     }
+    if (typeof rebalanceTeamsEqually === 'function') rebalanceTeamsEqually();
     SoundFX.playJoin(); updateLobbyPlayersUI(); updateSubmissionProgressUI();
   }
 
@@ -4297,13 +4322,33 @@ function addSimulatedStudents(count = 5) {
 
   function closeHostOverlay() {
     if (!confirm("진행 중인 화면을 종료하시겠습니까?")) return;
-    clearInterval(timerInterval);
     isHostingActive = false;
-    document.getElementById('hostFullscreenOverlay').classList.add('hidden');
-    document.getElementById('hostResultOverlay').classList.add('hidden');
-    document.getElementById('formativeVictoryOverlay').classList.add('hidden');
-    document.getElementById('yaNeoDuModal').classList.add('hidden');
-    document.getElementById('floatingPinBadge').classList.add('hidden');
+    roomState.status = "closed";
+
+    // 모든 타이머 및 애니메이션 루프 강제 종료
+    clearInterval(timerInterval); timerInterval = null;
+    if (typeof preCountdownInterval !== 'undefined' && preCountdownInterval) { clearInterval(preCountdownInterval); preCountdownInterval = null; }
+    if (typeof mpActionTimer !== 'undefined' && mpActionTimer) { clearInterval(mpActionTimer); mpActionTimer = null; }
+    if (typeof ReplayEngine !== 'undefined' && ReplayEngine.animId) cancelAnimationFrame(ReplayEngine.animId);
+    if (typeof SurvivalArenaEngine !== 'undefined') SurvivalArenaEngine.stop();
+    if (typeof RoguelikeRaidEngine !== 'undefined') {
+      RoguelikeRaidEngine.active = false;
+      if (RoguelikeRaidEngine.animId) cancelAnimationFrame(RoguelikeRaidEngine.animId);
+      if (RoguelikeRaidEngine.timerId) clearInterval(RoguelikeRaidEngine.timerId);
+    }
+
+    // 🛡️ Firebase 리스너 완전 해제 (종료 후 뒤늦게 결과창이 뜨는 현상 차단)
+    if (db && currentPin) {
+      db.ref(`rooms/${currentPin}/players`).off();
+      db.ref(`rooms/${currentPin}/answers`).off();
+      db.ref(`rooms/${currentPin}/mp_strokes`).off();
+      db.ref(`rooms/${currentPin}/state`).off();
+    }
+
+    ['hostFullscreenOverlay', 'hostResultOverlay', 'formativeVictoryOverlay', 'yaNeoDuModal', 'floatingPinBadge', 'hostBossRaidView'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.classList.add('hidden'); el.style.display = 'none'; }
+    });
   }
   
 
@@ -6530,6 +6575,8 @@ timerInterval = setInterval(() => {
   }
 
 function revealAnswerAndLeaderboard() {
+    // 🛡️ 방이 이미 종료되었거나 로비/시상대 상태이면 결과창 팝업 절대 금지!
+    if (!isHostingActive || roomState.status === 'lobby' || roomState.status === 'closed' || roomState.status === 'podium') return;
     const resultOverlay = document.getElementById('hostResultOverlay');
     if (resultOverlay && !resultOverlay.classList.contains('hidden') && resultOverlay.style.display === 'flex') return;
     
@@ -6789,8 +6836,11 @@ function revealAnswerAndLeaderboard() {
           }
         }, 1000);
 
-      } else if (currentGameMode === 'team') {
-        // 🪢 [줄다리기 전용] 실시간 순위표 숨김 & 12열 와이드 경기장 + 10초 카운트다운 후 자동 다음 라운드 이동!
+} else if (currentGameMode === 'team') {
+        // 🪢 [줄다리기 전용] 5:5 팀 밸런스 재확인 + 10초 카운트다운 + 마지막 라운드 피날레 연출!
+        if (typeof rebalanceTeamsEqually === 'function') rebalanceTeamsEqually();
+        document.getElementById('tugWinLoseFinaleOverlay')?.remove();
+
         if (leftCol) leftCol.className = "lg:col-span-12 bg-slate-950 border-2 border-cyan-500/60 rounded-2xl p-4 flex flex-col justify-between space-y-3 shadow-2xl";
         if (rightCol) rightCol.classList.add('hidden');
         if (canvasWrap) canvasWrap.className = "relative w-full h-[380px] rounded-xl overflow-hidden bg-slate-900 border-2 border-slate-700 transition-all";
@@ -6798,33 +6848,68 @@ function revealAnswerAndLeaderboard() {
         if (bgImg) bgImg.classList.add('hidden');
         if (mpCtrl) mpCtrl.classList.add('hidden');
 
-        let tugRemSec = 10;
+        coopState.tugRemSec = 10;
+        coopState.tugFinalePhase = null; // null | 'slowmo' | 'modal'
+        coopState.tugFinaleTick = 0;
+
         if (mpTimerBadge) {
-          mpTimerBadge.textContent = `🪢 스마트폰 연타 타임! 남은 시간: ${tugRemSec}초`;
+          mpTimerBadge.textContent = `🪢 스마트폰 연타 타임! 남은 시간: ${coopState.tugRemSec}초`;
           mpTimerBadge.classList.remove('hidden');
         }
         if (narEl) {
-          narEl.textContent = `🔥 지금 스마트폰 화면의 [영차! 당기기 (+1점)] 버튼을 연타하세요! 10초 후 다음 라운드로 자동 이동합니다!`;
+          narEl.textContent = `🔥 지금 스마트폰 화면의 [영차! 당기기 (+1점)] 버튼과 이모티콘을 눌러 응원하세요!`;
         }
 
         mpActionTimer = setInterval(() => {
-          tugRemSec--;
-          // 봇들도 10초 동안 자연스럽게 연타(+1~3점)에 동참
+          if (!isHostingActive || roomState.status === 'closed') {
+            clearInterval(mpActionTimer);
+            return;
+          }
+          coopState.tugRemSec--;
+
+          // 봇들도 10초 동안 연타(+1~3점) 및 가끔 이모티콘 발송
           Object.values(roomState.players || {}).filter(u => u.isBot).forEach(bot => {
             if (Math.random() < 0.65) bot.score = (bot.score || 0) + Math.floor(1 + Math.random() * 3);
+            if (Math.random() < 0.08 && !bot.chatMsg) {
+              const ems = ['🔥', '💪', '💦', '😆'];
+              bot.chatMsg = ems[Math.floor(Math.random() * ems.length)];
+              bot.isEmojiOnly = true;
+              bot.chatTime = Date.now();
+            }
           });
 
-          if (tugRemSec <= 0) {
+          // 🚨 종료 3초 전 경고 사운드
+          if (coopState.tugRemSec <= 3 && coopState.tugRemSec > 0) {
+            try { SoundFX.beep(880, 0.12, 'sawtooth', 0.08); } catch (e) {}
+          }
+
+          if (coopState.tugRemSec <= 0) {
             clearInterval(mpActionTimer);
             mpActionTimer = null;
-            if (mpTimerBadge) mpTimerBadge.textContent = `⌛ 줄다리기 종료! 다음 라운드로 이동합니다...`;
-            setTimeout(() => {
-              if (currentResultStage === 2 && !document.getElementById('hostResultOverlay')?.classList.contains('hidden')) {
-                handleResultNextStep(); // 10초 종료 시 자동으로 다음 라운드(또는 시상대)로 이동!
-              }
-            }, 600);
+
+            const totalQ = window.totalQuizCount || quizQuestions.length;
+            const isLastQ = (currentQuestionIndex + 1 >= totalQ);
+
+            if (isLastQ) {
+              // 🎬 마지막 문제일 때: 슬로우 모션(만세/눈물) 피날레 돌입!
+              coopState.tugFinalePhase = 'slowmo';
+              coopState.tugFinaleTick = 0;
+              roomState.status = "result";
+              syncRoomState();
+              updateStudentPadUI();
+              try { SoundFX.playBombExplosion(); } catch (e) {}
+              if (mpTimerBadge) mpTimerBadge.textContent = `🎬 최종 승부 결정!!`;
+            } else {
+              // 일반 라운드일 때: 다음 문제로 자동 이동
+              if (mpTimerBadge) mpTimerBadge.textContent = `⌛ 줄다리기 종료! 다음 라운드로 이동합니다...`;
+              setTimeout(() => {
+                if (isHostingActive && currentResultStage === 2 && !document.getElementById('hostResultOverlay')?.classList.contains('hidden')) {
+                  handleResultNextStep();
+                }
+              }, 600);
+            }
           } else if (mpTimerBadge) {
-            mpTimerBadge.textContent = `🪢 스마트폰 연타 타임! 남은 시간: ${tugRemSec}초`;
+            mpTimerBadge.textContent = `🪢 스마트폰 연타 타임! 남은 시간: ${coopState.tugRemSec}초`;
           }
         }, 1000);
 
@@ -6882,7 +6967,7 @@ else if (currentGameMode === 'team') {
           const rawRedScore = redPlayers.reduce((a, b) => a + (b.score || 0), 0);
           const rawBlueScore = bluePlayers.reduce((a, b) => a + (b.score || 0), 0);
 
-          // ⚖️ [홀수 인원 밸런스 보정] 인원이 더 많은 팀의 총점을 (적은팀 인원 / 많은팀 인원) 비율로 곱해 반올림!
+          // ⚖️ [홀수 인원 밸런스 보정]
           let redScore = rawRedScore;
           let blueScore = rawBlueScore;
           let balanceNotice = "";
@@ -6897,10 +6982,20 @@ else if (currentGameMode === 'team') {
             }
           }
 
-          // 점수 차이에 따른 밧줄 이동량 + 영차영차 당기는 탄성 진동 연출
-          const pullOscillation = Math.sin(now * 0.015) * 6;
-          const scoreDiff = blueScore - redScore;
-          const targetShift = Math.max(-150, Math.min(150, (scoreDiff / 30) * easeOut));
+          const isSlowMo = (coopState.tugFinalePhase === 'slowmo');
+          if (isSlowMo) coopState.tugFinaleTick = (coopState.tugFinaleTick || 0) + 1;
+
+          const scoreDiff = blueScore - redScore; // 음수면 홍팀 승, 양수면 청팀 승
+          const winningTeam = scoreDiff < 0 ? 'RED' : (scoreDiff > 0 ? 'BLUE' : 'DRAW');
+
+          // 슬로우 모션 중에는 승리 팀 쪽으로 밧줄이 천천히 크게 끌려감
+          const pullOscillation = isSlowMo ? Math.sin(now * 0.004) * 3 : Math.sin(now * 0.015) * 6;
+          let targetShift = Math.max(-150, Math.min(150, (scoreDiff / 30) * easeOut));
+          if (isSlowMo && winningTeam !== 'DRAW') {
+            const extraPull = Math.min(90, coopState.tugFinaleTick * 0.45);
+            targetShift += (winningTeam === 'BLUE' ? extraPull : -extraPull);
+          }
+
           const centerX = W / 2 + targetShift + pullOscillation;
           const ropeY = H / 2 + 35;
 
@@ -6940,18 +7035,17 @@ else if (currentGameMode === 'team') {
             ctx.fillText(balanceNotice, W / 2, 64);
           }
 
-          // 3. 👥 30명 전원 수용! 다중 대열(최대 팀당 18명, 양팀 36명) 지그재그 줄다리기 배치
+          // 3. 30명 전원 수용 다중 대열 렌더링 + 슬로우 모션 시 만세/눈물 애니메이션
           const maxDrawPerSide = 18;
           const redPullers = redPlayers.slice(0, maxDrawPerSide);
           const bluePullers = bluePlayers.slice(0, maxDrawPerSide);
 
-          // 인원수에 맞춰 가로 간격을 동적으로 조절하여 화면 밖으로 나가지 않게 설계
           const redCols = Math.max(1, Math.ceil(redPullers.length / 2));
           const blueCols = Math.max(1, Math.ceil(bluePullers.length / 2));
           const redStepX = Math.min(44, Math.floor((W / 2 - 95) / Math.max(1, redCols)));
           const blueStepX = Math.min(44, Math.floor((W / 2 - 95) / Math.max(1, blueCols)));
 
-          // 밧줄 먼저 바닥 레이어에 일부 그리기
+          // 밧줄 그리기
           ctx.save();
           ctx.strokeStyle = '#d97706'; ctx.lineWidth = 14; ctx.lineCap = 'round';
           ctx.beginPath(); ctx.moveTo(15, ropeY); ctx.lineTo(W - 15, ropeY); ctx.stroke();
@@ -6961,15 +7055,27 @@ else if (currentGameMode === 'team') {
           ctx.beginPath(); ctx.moveTo(15, ropeY); ctx.lineTo(W - 15, ropeY); ctx.stroke();
           ctx.restore();
 
-          // 🔴 홍팀 대원 렌더링 (밧줄 위아래 2~3열 지그재그 배치)
+          // 🔴 홍팀 대원 렌더링
           redPullers.forEach((u, idx) => {
             const colIdx = Math.floor(idx / 2);
-            const rowSlot = idx % 2; // 0: 밧줄 위쪽 대열, 1: 밧줄 아래쪽 대열
+            const rowSlot = idx % 2;
             const px = Math.max(32, centerX - 55 - colIdx * redStepX - (rowSlot * 14));
-            const py = ropeY + (rowSlot === 0 ? -4 : 28);
-            const leanAngle = -0.24 + Math.sin(now * 0.016 + idx) * 0.08;
-            const cIdx = u.charIndex !== undefined ? u.charIndex : (idx * 7) % 30;
+            let py = ropeY + (rowSlot === 0 ? -4 : 28);
+            let leanAngle = -0.24 + Math.sin(now * 0.016 + idx) * 0.08;
 
+            if (isSlowMo) {
+              if (winningTeam === 'RED' || winningTeam === 'DRAW') {
+                // 승리 팀: 신나게 점프하며 만세!
+                py -= Math.abs(Math.sin(now * 0.01 + idx)) * 22;
+                leanAngle = Math.sin(now * 0.012 + idx) * 0.12;
+              } else {
+                // 패배 팀: 앞으로 풀썩 주저앉으며 눈물
+                py += 8;
+                leanAngle = 0.38;
+              }
+            }
+
+            const cIdx = u.charIndex !== undefined ? u.charIndex : (idx * 7) % 30;
             ctx.save();
             ctx.translate(px, py);
             ctx.rotate(leanAngle);
@@ -6977,7 +7083,15 @@ else if (currentGameMode === 'team') {
               ctx.font = '28px sans-serif'; ctx.textAlign = 'center';
               ctx.fillText(u.avatar || '🔴', 0, -8);
             }
-            if ((Math.floor(now / 220) + idx) % 3 === 0) {
+
+            if (isSlowMo) {
+              ctx.font = '18px sans-serif'; ctx.textAlign = 'center';
+              if (winningTeam === 'RED' || winningTeam === 'DRAW') {
+                ctx.fillText('🙌🎉', 0, -58);
+              } else {
+                ctx.fillText('😭💧', 0, -54);
+              }
+            } else if ((Math.floor(now / 220) + idx) % 3 === 0) {
               ctx.font = '12px sans-serif';
               ctx.fillText('💦', -18, -42);
             }
@@ -6986,17 +7100,32 @@ else if (currentGameMode === 'team') {
             ctx.fillStyle = '#fecdd3'; ctx.font = 'bold 10px Pretendard, sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText(u.name.slice(0, 4), px, py + 15);
+
+            // 💬 줄다리기 도중 학생이 보낸 이모티콘 & 말풍선 실시간 표시!
+            if (typeof drawPlayerChatBubble === 'function') {
+              drawPlayerChatBubble(ctx, u, px, py - 66);
+            }
           });
 
-          // 🔵 청팀 대원 렌더링 (밧줄 위아래 2~3열 지그재그 배치)
+          // 🔵 청팀 대원 렌더링
           bluePullers.forEach((u, idx) => {
             const colIdx = Math.floor(idx / 2);
             const rowSlot = idx % 2;
             const px = Math.min(W - 32, centerX + 55 + colIdx * blueStepX + (rowSlot * 14));
-            const py = ropeY + (rowSlot === 0 ? -4 : 28);
-            const leanAngle = 0.24 + Math.sin(now * 0.016 + idx) * 0.08;
-            const cIdx = u.charIndex !== undefined ? u.charIndex : (idx * 7 + 3) % 30;
+            let py = ropeY + (rowSlot === 0 ? -4 : 28);
+            let leanAngle = 0.24 + Math.sin(now * 0.016 + idx) * 0.08;
 
+            if (isSlowMo) {
+              if (winningTeam === 'BLUE' || winningTeam === 'DRAW') {
+                py -= Math.abs(Math.sin(now * 0.01 + idx)) * 22;
+                leanAngle = Math.sin(now * 0.012 + idx) * 0.12;
+              } else {
+                py += 8;
+                leanAngle = -0.38;
+              }
+            }
+
+            const cIdx = u.charIndex !== undefined ? u.charIndex : (idx * 7 + 3) % 30;
             ctx.save();
             ctx.translate(px, py);
             ctx.rotate(leanAngle);
@@ -7004,7 +7133,15 @@ else if (currentGameMode === 'team') {
               ctx.font = '28px sans-serif'; ctx.textAlign = 'center';
               ctx.fillText(u.avatar || '🔵', 0, -8);
             }
-            if ((Math.floor(now / 220) + idx) % 3 === 0) {
+
+            if (isSlowMo) {
+              ctx.font = '18px sans-serif'; ctx.textAlign = 'center';
+              if (winningTeam === 'BLUE' || winningTeam === 'DRAW') {
+                ctx.fillText('🙌🎉', 0, -58);
+              } else {
+                ctx.fillText('😭💧', 0, -54);
+              }
+            } else if ((Math.floor(now / 220) + idx) % 3 === 0) {
               ctx.font = '12px sans-serif';
               ctx.fillText('💦', 18, -42);
             }
@@ -7013,6 +7150,11 @@ else if (currentGameMode === 'team') {
             ctx.fillStyle = '#bae6fd'; ctx.font = 'bold 10px Pretendard, sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText(u.name.slice(0, 4), px, py + 15);
+
+            // 💬 줄다리기 도중 학생이 보낸 이모티콘 & 말풍선 실시간 표시!
+            if (typeof drawPlayerChatBubble === 'function') {
+              drawPlayerChatBubble(ctx, u, px, py - 66);
+            }
           });
 
           // 중앙 기준 마커 (황금 리본)
@@ -7023,8 +7165,8 @@ else if (currentGameMode === 'team') {
           ctx.fillText('▼ CENTER', W / 2, 95);
           ctx.restore();
 
-          // 📢 4. 첫 3초간(elapsed < 3000) "스마트폰 화면을 클릭하세요!" 대형 안내 멘트 오버레이 표시
-          if (elapsed < 3000) {
+          // 📢 첫 3초간 스마트폰 클릭 안내 배너
+          if (elapsed < 3000 && !isSlowMo) {
             const remainAlertSec = Math.ceil((3000 - elapsed) / 1000);
             ctx.save();
             ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
@@ -7045,7 +7187,57 @@ else if (currentGameMode === 'team') {
             ctx.fillText(`버튼을 클릭할 때마다 우리 팀 점수가 1점씩 올라갑니다! (${remainAlertSec}초 후 안내창 닫힘)`, W / 2, H / 2 + 26);
             ctx.restore();
           }
+
+          // 🚨 종료 3초 전(3, 2, 1) 빨간색 긴급 화면 점멸 + 중앙 대형 카운트다운 애니메이션!
+          if (!isSlowMo && coopState.tugRemSec <= 3 && coopState.tugRemSec > 0) {
+            const pulseAlpha = 0.22 + Math.abs(Math.sin(now * 0.018)) * 0.32;
+            ctx.save();
+            ctx.fillStyle = `rgba(220, 38, 38, ${pulseAlpha})`;
+            ctx.fillRect(0, 0, W, H);
+
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 10;
+            ctx.strokeRect(5, 5, W - 10, H - 10);
+
+            const scaleBounce = 1 + Math.abs(Math.sin(now * 0.015)) * 0.25;
+            ctx.translate(W / 2, H / 2);
+            ctx.scale(scaleBounce, scaleBounce);
+            ctx.font = '900 110px Pretendard, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = '#000000';
+            ctx.shadowBlur = 25;
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(String(coopState.tugRemSec), 0, 0);
+
+            ctx.font = '900 20px Pretendard, sans-serif';
+            ctx.fillStyle = '#fde047';
+            ctx.fillText('🚨 마지막 스퍼트! 광클하세요!! 🚨', 0, 72);
+            ctx.restore();
+          }
+
+          // 🎬 마지막 라운드 슬로우 모션 자막 & 승리 팀 안내 모달 호출
+          if (isSlowMo) {
+            ctx.save();
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+            ctx.fillRect(0, H / 2 - 115, W, 68);
+            ctx.textAlign = 'center';
+            ctx.font = '900 30px Pretendard, sans-serif';
+            ctx.fillStyle = '#fde047';
+            const winBannerTxt = winningTeam === 'RED' ? '🎬 SLOW MOTION — 🔴 홍팀 마지막 당기기 성공!! 🙌' : (winningTeam === 'BLUE' ? '🎬 SLOW MOTION — 🔵 청팀 마지막 당기기 성공!! 🙌' : '🎬 SLOW MOTION — ⚡ 기적의 무승부!!');
+            ctx.fillText(winBannerTxt, W / 2, H / 2 - 73);
+            ctx.restore();
+
+            // 약 3.5초(210프레임) 슬로우 모션 후 최종 승리 안내 화면 표시
+            if (coopState.tugFinaleTick >= 210) {
+              coopState.tugFinalePhase = 'modal';
+              showTugOfWarFinaleModal(winningTeam, redScore, blueScore);
+              return;
+            }
+          }
         }
+
+
                 else if (currentGameMode === 'accuracy') {
           const realList = allP.filter(u => u.online !== false);
           const survivors = realList.filter(u => u.survivalState !== 'ghost' && u.survivalState !== 'skull');
@@ -7206,6 +7398,40 @@ else if (currentGameMode === 'kingdom') {
       this.animId = requestAnimationFrame(renderFrame);
     }
   };
+
+// 🏆 줄다리기 최종 승리 팀 발표 오버레이 (확인 클릭 시 명예의 전당으로 이동)
+  function showTugOfWarFinaleModal(winningTeam, redScore, blueScore) {
+    if (ReplayEngine.animId) cancelAnimationFrame(ReplayEngine.animId);
+    try { SoundFX.playPodiumFanfare(); } catch (e) {}
+
+    const wrap = document.getElementById('replayCanvasWrap');
+    if (!wrap) {
+      showFinalPodium();
+      return;
+    }
+
+    document.getElementById('tugWinLoseFinaleOverlay')?.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'tugWinLoseFinaleOverlay';
+    overlay.className = "absolute inset-0 z-30 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center space-y-4 pop-anim";
+
+    const titleHtml = winningTeam === 'RED'
+      ? `<div class="text-6xl animate-bounce">🔴🙌🎉</div><div class="text-4xl md:text-6xl font-black text-rose-400 drop-shadow-lg">홍팀 최종 승리!! (RED WIN!)</div>`
+      : (winningTeam === 'BLUE'
+        ? `<div class="text-6xl animate-bounce">🔵🙌🎉</div><div class="text-4xl md:text-6xl font-black text-sky-400 drop-shadow-lg">청팀 최종 승리!! (BLUE WIN!)</div>`
+        : `<div class="text-6xl animate-bounce">🤝⚡</div><div class="text-4xl md:text-6xl font-black text-amber-300 drop-shadow-lg">환상의 무승부!! (DRAW!)</div>`);
+
+    overlay.innerHTML = `
+      ${titleHtml}
+      <div class="text-base md:text-xl font-bold text-slate-200 bg-slate-900 px-6 py-2.5 rounded-2xl border border-slate-700">
+        🔴 홍팀 최종 점수: <b class="text-rose-400">${redScore.toLocaleString()}점</b> &nbsp;|&nbsp; 🔵 청팀 최종 점수: <b class="text-sky-400">${blueScore.toLocaleString()}점</b>
+      </div>
+      <button type="button" onclick="document.getElementById('tugWinLoseFinaleOverlay')?.remove(); document.getElementById('hostResultOverlay').classList.add('hidden'); document.getElementById('hostResultOverlay').style.display='none'; showFinalPodium();" class="mt-2 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 px-10 py-3.5 rounded-full font-black text-xl shadow-2xl transition transform hover:scale-105">
+        🎊 최종 명예의 전당(시상대)으로 이동 ➔
+      </button>
+    `;
+    wrap.appendChild(overlay);
+  }
 
 // [수정 4]: 점수 롤링 & 순위 교차 슬라이딩 애니메이션
   function animateScoreCounter(el, startVal, endVal, duration = 800) {
@@ -7694,7 +7920,7 @@ const mergedPlayer = {
     updateSubmissionProgressUI();
   }
 
-  let myRoundTugTaps = 0;
+let myRoundTugTaps = 0;
   function sendStudentTugTap() {
     if (roomState.status !== 'action' || currentGameMode !== 'team') return;
     myRoundTugTaps++;
@@ -7712,6 +7938,16 @@ const mergedPlayer = {
     }
     try { SoundFX.playRouletteTick(); } catch (e) {}
   }
+
+  // 💬 줄다리기 도중 말풍선 텍스트 전송
+  function submitStudentTugTextChat() {
+    const input = document.getElementById('studentTugChatInput');
+    const msg = (input?.value || "").trim();
+    if (!msg) return;
+    input.value = "";
+    sendStudentChat(msg, false);
+  }
+
 
   function submitStudentAnswer(choiceIdx) {
     const q = normalizeQuestionObject(quizQuestions[roomState.currentQIndex]);
@@ -7758,7 +7994,7 @@ const mergedPlayer = {
   }
 
   // ==================== [최종 수정된 학생 패드 UI 컨트롤러 (인라인 스타일 충돌 및 모드 유실 완전 차단)] ====================
-// [수정 1]: updateStudentPadUI() 함수 전체 교체
+// [수정 1]: updateStudentPadUI() 함수 전체 교체 (안전 버전 - 아래 함수들 훼손 없음)
   function updateStudentPadUI() {
     const urlParams = new URLSearchParams(window.location.search);
     const paramMode = urlParams.get('mode');
@@ -7770,7 +8006,7 @@ const mergedPlayer = {
       serverJoystickModeFlag = true;
     }
 
-    const isSurvivalMode = (currentGameMode === 'accuracy');
+    const isSurvivalMode = (currentGameMode === 'accuracy' || serverJoystickModeFlag);
 
     const waitBox = document.getElementById('studentWaitMessage');
     const btnGrid = document.getElementById('studentButtonsGrid');
@@ -7787,23 +8023,67 @@ const mergedPlayer = {
     const zoneDisplay = document.getElementById('joystickCurrentZoneText');
     const rogueCardBox = document.getElementById('studentRoguelikeCardBox');
     const bossUltBox = document.getElementById('studentBossUltBox');
+    
+    // ✅ 줄다리기 연타 패드가 없으면 생성
+    let tugTapBox = document.getElementById('studentTugTapBox');
+    if (!tugTapBox) {
+      const padParent = document.getElementById('studentPadBox');
+      if (padParent) {
+        const tempDiv = document.createElement('div');
+        tempDiv.id = 'studentTugTapBox';
+        tempDiv.className = 'hidden flex-col items-center gap-3 w-full bg-slate-900 p-5 rounded-3xl border-4 border-amber-400 shadow-2xl';
+        padParent.appendChild(tempDiv);
+        tugTapBox = tempDiv;
+      }
+    }
+    // 이모티콘 바 및 HTML 구조화
+    if (tugTapBox && !tugTapBox.dataset.chatEnhanced) {
+      tugTapBox.dataset.chatEnhanced = "1";
+      tugTapBox.innerHTML = `
+        <div id="stuTugTeamBadge" class="text-sm font-black px-4 py-1 rounded-full bg-rose-600 text-white">🔴 홍팀 대원</div>
+        <div class="text-lg font-black text-amber-300 animate-bounce">⏱️ 10초 동안 버튼을 연타해 줄을 당기세요!</div>
+        <button type="button" onclick="sendStudentTugTap()" class="w-full py-9 rounded-3xl bg-gradient-to-b from-amber-400 via-orange-500 to-rose-600 active:scale-95 text-slate-950 font-black text-3xl shadow-2xl border-4 border-white transition transform select-none touch-manipulation">
+          🪢 영차! 당기기! (+1점)
+        </button>
+        <div class="text-xs font-bold text-slate-300">이번 라운드 내 연타: <span id="stuTugTapCount" class="text-amber-400 font-black text-base">0</span>회</div>
+        <div class="w-full space-y-2 pt-2.5 border-t border-slate-700/80">
+          <div class="flex justify-between items-center gap-1.5">
+            <button type="button" onclick="sendStudentChat('🔥', true)" class="flex-1 py-1.5 bg-slate-950 hover:bg-slate-800 rounded-xl text-xl border border-slate-700 active:scale-90">🔥</button>
+            <button type="button" onclick="sendStudentChat('💪', true)" class="flex-1 py-1.5 bg-slate-950 hover:bg-slate-800 rounded-xl text-xl border border-slate-700 active:scale-90">💪</button>
+            <button type="button" onclick="sendStudentChat('💦', true)" class="flex-1 py-1.5 bg-slate-950 hover:bg-slate-800 rounded-xl text-xl border border-slate-700 active:scale-90">💦</button>
+            <button type="button" onclick="sendStudentChat('😂', true)" class="flex-1 py-1.5 bg-slate-950 hover:bg-slate-800 rounded-xl text-xl border border-slate-700 active:scale-90">😂</button>
+            <button type="button" onclick="sendStudentChat('🎉', true)" class="flex-1 py-1.5 bg-slate-950 hover:bg-slate-800 rounded-xl text-xl border border-slate-700 active:scale-90">🎉</button>
+            <button type="button" onclick="sendStudentChat('😭', true)" class="flex-1 py-1.5 bg-slate-950 hover:bg-slate-800 rounded-xl text-xl border border-slate-700 active:scale-90">😭</button>
+          </div>
+          <div class="flex gap-1.5">
+            <input type="text" id="studentTugChatInput" maxlength="20" placeholder="줄다리기 응원 한마디 (최대 20자)" onkeydown="if(event.key==='Enter') submitStudentTugTextChat()" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none focus:border-amber-400">
+            <button type="button" onclick="submitStudentTugTextChat()" class="bg-[#4d49fc] hover:opacity-90 text-white px-3.5 py-2 rounded-xl text-xs font-black shrink-0">전송</button>
+          </div>
+        </div>
+      `;
+    }
 
-    // 1. 모든 패널 일괄 숨김 및 초기화
-    [btnGrid, oxGrid, shortBox, puzzleBox, confBox, joystickBox, dynScoreBox, mpBox, waitBox, qTextBox, qImgBox, rogueCardBox].forEach(el => {
+    // 1. 모든 패널 일괄 숨김 (tugTapBox도 포함시켜 2번 문제부터 절대 안 보이게 차단)
+    [btnGrid, oxGrid, shortBox, puzzleBox, confBox, joystickBox, dynScoreBox, mpBox, waitBox, qTextBox, qImgBox, rogueCardBox, tugTapBox].forEach(el => {
       if (el) {
         el.classList.add('hidden');
         el.classList.remove('flex');
-        el.style.display = '';
+        el.style.display = 'none';
       }
     });
 
-    // 2-A. ⚔️ 보스 레이드 상태일 때: 학생 스마트폰에 조이스틱 + 내 RPG 스탯바 강제 오픈!
+    // 2. 일반 문제 화면 패널들만 display 속성 복구
+    [btnGrid, oxGrid, shortBox, puzzleBox, confBox, dynScoreBox, mpBox, waitBox, qTextBox, qImgBox, rogueCardBox].forEach(el => {
+      if (el) el.style.display = '';
+    });
+
+    // 2-A. 보스 레이드 상태
     if (roomState.status === "boss_raid") {
       if (rogueCardBox) {
         rogueCardBox.classList.remove('hidden');
         rogueCardBox.style.display = 'block';
         const cardGrid = document.getElementById('studentRewardCardsGrid');
-        if (cardGrid) cardGrid.classList.add('hidden'); // 카드 버튼은 숨기고 하단 내 스탯바만 노출
+        if (cardGrid) cardGrid.classList.add('hidden'); 
         RoguelikeRaidEngine.updateStudentStatsBar();
       }
       if (joystickBox) {
@@ -7812,7 +8092,7 @@ const mergedPlayer = {
         joystickBox.style.display = 'flex';
       }
       if (zoneDisplay) {
-        zoneDisplay.innerHTML = `⚔️ <b>실시간 보스 레이드 결전!</b> 조이스틱으로붉은 장판을 피하며 보스를 무찌르세요!`;
+        zoneDisplay.innerHTML = `⚔️ <b>실시간 보스 레이드 결전!</b> 조이스틱으로 붉은 장판을 피하며 보스를 무찌르세요!`;
       }
       return;
     } else {
@@ -7822,9 +8102,7 @@ const mergedPlayer = {
 
     // 2-B. 대기실(lobby) 상태
     if (roomState.status === "lobby" || roomState.currentQIndex === undefined || roomState.currentQIndex < 0) {
-      if (zoneDisplay) {
-        zoneDisplay.innerHTML = `🕹️ 조이스틱을 움직여 캐릭터를 자유롭게 이동해 보세요!`;
-      }
+      if (zoneDisplay) zoneDisplay.innerHTML = `🕹️ 조이스틱을 움직여 캐릭터를 자유롭게 이동해 보세요!`;
       if (waitBox) {
         waitBox.classList.remove('hidden');
         document.getElementById('studentWaitEmoji').textContent = "🎮";
@@ -7841,12 +8119,10 @@ const mergedPlayer = {
 
     const q = normalizeQuestionObject(quizQuestions[roomState.currentQIndex] || {});
 
-    // 3. 사전 카운트다운(pre-question) — 몬스터 퇴치 모드는 여기서 10초간 3지선다 카드 파밍!
+    // 3. 사전 카운트다운(pre-question)
     if (roomState.status === "pre-question") {
       document.getElementById('studentPadBox')?.classList.remove('timer-warning-pulse');
-      if (currentGameMode === 'kingdom') {
-        RoguelikeRaidEngine.rollCardsForStudentQuestion();
-      }
+      if (currentGameMode === 'kingdom') RoguelikeRaidEngine.rollCardsForStudentQuestion();
       if (qTextBox) {
         qTextBox.innerHTML = `<span class="text-indigo-400 font-black mr-1.5">Q${roomState.currentQIndex + 1}.</span>${escapeHtml(q.question)}`;
         qTextBox.classList.remove('hidden');
@@ -7864,100 +8140,53 @@ const mergedPlayer = {
     if (roomState.status === "question" && !hasAnsweredCurrent) {
       if (currentGameMode === 'confidence' && confBox) confBox.classList.remove('hidden');
       if (currentGameMode === 'kingdom') RoguelikeRaidEngine.rollCardsForStudentQuestion();
-      if (!localQStartTime) localQStartTime = Date.now();
-
+      
       if (qTextBox) {
         qTextBox.innerHTML = `<span class="text-indigo-400 font-black mr-1.5">Q${roomState.currentQIndex + 1}.</span>${escapeHtml(q.question)}`;
         qTextBox.classList.remove('hidden');
       }
-      if (q.image && qImgBox && qImgEl) {
-        qImgEl.src = q.image; 
-        qImgBox.classList.remove('hidden');
-      }
+      if (qImgBox && q.image) { qImgEl.src = q.image; qImgBox.classList.remove('hidden'); }
 
-      // 서바이벌 모드 (조이스틱 패드 오픈)
       if (isSurvivalMode && q.q_type !== 'short' && q.q_type !== 'puzzle') {
-        const me = roomState.players[myStudentId] || {};
-        if (zoneDisplay) {
-          let statusTitle = `🕹️ 정답 구역으로 이동하세요! (${me.comboStreak || 0}콤보)`;
-          if (me.survivalState === 'angel') statusTitle = `👼 천사 각성! 초고속으로 이동하세요! (${me.comboStreak || 0}콤보)`;
-          else if (me.survivalState === 'skull') statusTitle = "💀 해골 상태! 정답 구역으로 가면 부활!";
-          else if (me.survivalState === 'ghost') statusTitle = "👻 유령 상태! 정답 구역으로 가면 부활!";
-          
-          const optionsSub = (q.q_type === 'ox')
-            ? "왼쪽: ⭕ 참(O) | 오른쪽: ❌ 거짓(X)"
-            : `🔮A: ${escapeHtml(q.options[0])} | ⚡B: ${escapeHtml(q.options[1])} | 👑C: ${escapeHtml(q.options[2])} | 🛡️D: ${escapeHtml(q.options[3] || '')}`;
-
-          zoneDisplay.innerHTML = `<div class="text-amber-300 font-black mb-1">${statusTitle}</div><div class="text-xs text-slate-300 font-semibold">${optionsSub}</div>`;
-        }
-        
         if (joystickBox) {
           joystickBox.classList.remove('hidden');
           joystickBox.classList.add('flex');
+          joystickBox.style.display = 'flex';
         }
-        return;
-      }
-
-      // 일반 모드 선택지 오픈
-      if (q.q_type === 'ox') {
-        if (oxGrid) oxGrid.classList.remove('hidden');
-      } else if (q.q_type === 'short') {
-        if (shortBox) shortBox.classList.remove('hidden');
-      } else if (q.q_type === 'puzzle') {
-        if (puzzleBox) puzzleBox.classList.remove('hidden');
-        renderStudentPuzzlePadState();
-        const shuffled = q.options.map((text, origIdx) => ({ text, origIdx })).sort((a, b) => a.text.localeCompare(b.text));
-        const puzzleChoices = document.getElementById('studentPuzzleChoices');
-        if (puzzleChoices) {
-          puzzleChoices.innerHTML = shuffled.map(item => `
-            <button type="button" onclick="togglePuzzleStepChoice(${item.origIdx}, '${escapeHtml(item.text)}')" class="bg-slate-900 hover:bg-slate-700 border border-cyan-500/40 p-3 rounded-xl text-left text-xs font-bold text-white transition">
-              🧩 ${escapeHtml(item.text)}
-            </button>
-          `).join('');
+        if (dynScoreBox) {
+          dynScoreBox.classList.remove('hidden');
+          dynScoreBox.classList.add('animate-pulse');
+          if (!stuScoreAnimInterval) {
+            stuScoreAnimInterval = setInterval(() => {
+              const startT = localQStartTime || roomState.qStartTime || Date.now();
+              const elapsed = Math.max(0, Date.now() - startT);
+              const limitMs = (q.time_limit || 15) * 1000;
+              const currentDyn = Math.max(500, Math.round(1000 - 500 * Math.min(1, elapsed / limitMs)));
+              document.getElementById('studentDynamicScoreText').textContent = currentDyn.toLocaleString();
+            }, 100);
+          }
         }
       } else {
-        q.options.forEach((opt, idx) => {
-          const optEl = document.getElementById(`studentOpt${idx}`);
-          if (optEl) optEl.textContent = opt;
-        });
-        if (btnGrid) btnGrid.classList.remove('hidden');
+        if (q.q_type === 'ox') {
+          if (oxGrid) oxGrid.classList.remove('hidden');
+        } else if (q.q_type === 'short') {
+          if (shortBox) { shortBox.classList.remove('hidden'); document.getElementById('studentShortInput').value = ""; }
+        } else if (q.q_type === 'puzzle') {
+          if (puzzleBox) {
+            puzzleBox.classList.remove('hidden');
+            renderStudentPuzzlePad(q);
+          }
+        } else {
+          if (btnGrid) {
+            btnGrid.classList.remove('hidden');
+            for (let i = 0; i < 4; i++) {
+              const optEl = document.getElementById(`studentOpt${i}`);
+              if (optEl) optEl.textContent = q.options[i] || '';
+            }
+          }
+        }
       }
       return;
-    }
-
-const tugTapBox = document.getElementById('studentTugTapBox');
-    if (tugTapBox) { tugTapBox.classList.add('hidden'); tugTapBox.classList.remove('flex'); }
-
-    // 5. 라이브 액션 상태
-    if (roomState.status === "action") {
-      document.getElementById('studentPadBox')?.classList.remove('timer-warning-pulse');
-      if (currentGameMode === 'masterpiece' && mpBox) {
-        mpBox.classList.remove('hidden');
-        mpBox.classList.add('flex');
-        initStudentMasterpiecePad();let tugTapBox = document.getElementById('studentTugTapBox');
-    // 만약 HTML에 studentTugTapBox가 누락되어 있더라도 자동 생성하여 100% 표시 보장!
-    if (!tugTapBox) {
-      const padParent = document.getElementById('studentPadBox');
-      if (padParent) {
-        const tempDiv = document.createElement('div');
-        tempDiv.id = 'studentTugTapBox';
-        tempDiv.className = 'hidden flex-col items-center gap-3 w-full bg-slate-900 p-5 rounded-3xl border-4 border-amber-400 shadow-2xl';
-        tempDiv.innerHTML = `
-          <div id="stuTugTeamBadge" class="text-sm font-black px-4 py-1 rounded-full bg-rose-600 text-white">🔴 홍팀 대원</div>
-          <div class="text-lg font-black text-amber-300 animate-bounce">⏱️ 10초 동안 버튼을 연타해 줄을 당기세요!</div>
-          <button type="button" onclick="sendStudentTugTap()" class="w-full py-10 rounded-3xl bg-gradient-to-b from-amber-400 via-orange-500 to-rose-600 active:scale-95 text-slate-950 font-black text-3xl shadow-2xl border-4 border-white transition transform select-none touch-manipulation">
-            🪢 영차! 당기기! (+1점)
-          </button>
-          <div class="text-xs font-bold text-slate-300">이번 라운드 내 연타: <span id="stuTugTapCount" class="text-amber-400 font-black text-base">0</span>회</div>
-        `;
-        padParent.appendChild(tempDiv);
-        tugTapBox = tempDiv;
-      }
-    }
-    if (tugTapBox) {
-      tugTapBox.classList.add('hidden');
-      tugTapBox.classList.remove('flex');
-      tugTapBox.style.display = 'none';
     }
 
     // 5. 라이브 액션 상태
@@ -7979,28 +8208,7 @@ const tugTapBox = document.getElementById('studentTugTapBox');
         }
         tugTapBox.classList.remove('hidden');
         tugTapBox.classList.add('flex');
-        tugTapBox.style.display = 'flex';
-      } else if (waitBox) {
-        waitBox.classList.remove('hidden');
-        document.getElementById('studentWaitEmoji').textContent = "🎮";
-        document.getElementById('studentStatusTitle').textContent = "라이브 액션 진행 중!";
-        document.getElementById('studentStatusSub').textContent = "전자칠판 화면을 함께 확인해 주세요.";
-      }
-      return;
-    }
-      } else if (currentGameMode === 'team' && tugTapBox) {
-        // 🪢 줄다리기 모드일 때 10초 동안 +1점 연타 버튼 활성화!
-        myRoundTugTaps = 0;
-        const cntEl = document.getElementById('stuTugTapCount');
-        if (cntEl) cntEl.textContent = "0";
-        const myTeamNow = roomState.players[myStudentId]?.team || myTeam || 'RED';
-        const badgeEl = document.getElementById('stuTugTeamBadge');
-        if (badgeEl) {
-          badgeEl.textContent = myTeamNow === 'BLUE' ? '🔵 청팀 대원 (연타하여 청팀 쪽으로 당기세요!)' : '🔴 홍팀 대원 (연타하여 홍팀 쪽으로 당기세요!)';
-          badgeEl.className = myTeamNow === 'BLUE' ? 'text-xs font-black px-4 py-1.5 rounded-full bg-cyan-600 text-white' : 'text-xs font-black px-4 py-1.5 rounded-full bg-rose-600 text-white';
-        }
-        tugTapBox.classList.remove('hidden');
-        tugTapBox.classList.add('flex');
+        tugTapBox.style.display = 'flex'; // 확실하게 노출
       } else if (waitBox) {
         waitBox.classList.remove('hidden');
         document.getElementById('studentWaitEmoji').textContent = "🎮";
@@ -8010,16 +8218,22 @@ const tugTapBox = document.getElementById('studentTugTapBox');
       return;
     }
 
-    // 6. 결과 대기 상태
+    // 6. 결과 대기 상태 (이미 답을 제출함)
     if (waitBox) {
-      document.getElementById('studentPadBox')?.classList.remove('timer-warning-pulse');
       waitBox.classList.remove('hidden');
-      document.getElementById('studentWaitEmoji').textContent = "🎯";
-      document.getElementById('studentStatusTitle').textContent = "답안 제출 완료!";
-      document.getElementById('studentStatusSub').textContent = "다른 친구들이 모두 제출할 때까지 잠시 기다려 주세요.";
+      const me = roomState.players[myStudentId];
+      if (roomState.status === "result") {
+        const isCorrect = me && me.lastCorrectQ === roomState.currentQIndex;
+        document.getElementById('studentWaitEmoji').textContent = isCorrect ? "🎉" : "💡";
+        document.getElementById('studentStatusTitle').textContent = isCorrect ? "정답입니다!" : "아쉽네요! 해설을 확인하세요";
+        document.getElementById('studentStatusSub').textContent = "칠판에서 정답 해설과 실시간 현황을 확인하세요.";
+      } else {
+        document.getElementById('studentWaitEmoji').textContent = "✅";
+        document.getElementById('studentStatusTitle').textContent = "답안 제출 완료!";
+        document.getElementById('studentStatusSub').textContent = "다른 친구들이 모두 제출할 때까지 잠시 기다려 주세요.";
+      }
     }
-  }
-
+  } // ◀ updateStudentPadUI() 닫는 중괄호
 
   // ==================== 12. 퀴즈별 30% 취약 문항 분류 + 아코디언 분석 리포트 ====================
   function buildQuestionAnalysisArray() {
