@@ -1747,15 +1747,15 @@ if (sheet && sheet.complete && sheet.naturalWidth > 0) {
   let launcherState = { selectedClassIndex: 0, selectedQuizId: null, selectedMode: 'classic' };
 
   // ==================== 3. 사운드 & 학년 색상 테마 ====================
-// 🎵 게임 모드별 구글 드라이브 AI 생성 BGM 매핑 완료
+// 🎵 GitHub 저장소에 직접 업로드한 음원 경로 매핑 (CORS 에러 0%, 무조건 즉시 재생)
   const GAME_BGM_TRACKS = {
-    lobby: "https://docs.google.com/uc?export=download&id=1Y4LRU4TEj0UWyRo5nx5YG4eer13tY66l",             // 대기실 (lobby.wav)
-    classic: "https://docs.google.com/uc?export=download&id=1kwuUtpg_onVgkS6roje0AHNFCZmFWvF4",         // 스피드런 (classic.wav)
-    accuracy: "https://docs.google.com/uc?export=download&id=1QXQoCfp3N9QJ94aXdt2URA70RNvFqjcJ",        // 정답구역 서바이벌 (accuracy.wav)
-    team: "https://docs.google.com/uc?export=download&id=1MGH6jKIoUGSTBQtZopW04SHIsK6joVWx",             // 홍팀청팀 줄다리기 (team.wav)
-    kingdom: "https://docs.google.com/uc?export=download&id=1F-24ytpGrw7nOUYdVPk_eItBG1Mf6qso",          // 몬스터 퇴치 / 보스전 (kingdom.wav)
-    masterpiece: "https://docs.google.com/uc?export=download&id=1GWqJL-MW_YFyR3BRCL9R0Zx-CQq6GzNu",     // 맞췄으면 칠해 (masterpiece.wav)
-    podium: "https://docs.google.com/uc?export=download&id=1Ve6KFut4miA9vpLs7m_7xwhw784rVOGz"            // 최종 시상대 (podium.wav)
+    lobby: "./sounds/lobby.wav",             
+    classic: "./sounds/classic.wav",         
+    accuracy: "./sounds/accuracy.wav",        
+    team: "./sounds/team.wav",             
+    kingdom: "./sounds/kingdom.wav",          
+    masterpiece: "./sounds/masterpiece.wav",     
+    podium: "./sounds/podium.wav"            
   };
 
   const SoundFX = {
