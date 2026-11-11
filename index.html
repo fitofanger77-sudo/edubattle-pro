@@ -1822,6 +1822,21 @@ if (sheet && sheet.complete && sheet.naturalWidth > 0) {
       }
     },
 
+    // 🥁 버튼 클릭 시 재생될 "두둥!" 임팩트 효과음
+    playDudung() {
+      if (this.muted) return;
+      try {
+        this.init();
+        if (!this.ctx) return;
+        // 첫 번째 "두!" (낮은 묵직한 타격음)
+        this.beep(160, 0.18, 'sawtooth', 0.15);
+        // 두 번째 "둥!" (더 낮고 웅장한 타격음)
+        setTimeout(() => {
+          this.beep(110, 0.35, 'triangle', 0.22);
+        }, 150);
+      } catch (e) {}
+    },
+
     // 음소거 토글 연동
     setMute(isMuted) {
       this.muted = isMuted;
@@ -6686,6 +6701,8 @@ function triggerSimulatedBotsForRound() {
 function revealAnswerAndLeaderboard() {
     // 🛡️ 방이 이미 종료되었거나 로비/시상대 상태이면 결과창 팝업 절대 금지!
     if (!isHostingActive || roomState.status === 'lobby' || roomState.status === 'closed' || roomState.status === 'podium') return;
+    // 🎵 [추가할 장소] 정답 공개 화면 진입 시 BGM 즉시 정지!
+    SoundFX.stopBGM();
     const resultOverlay = document.getElementById('hostResultOverlay');
     if (resultOverlay && !resultOverlay.classList.contains('hidden') && resultOverlay.style.display === 'flex') return;
     
@@ -6806,6 +6823,7 @@ function revealAnswerAndLeaderboard() {
 // 3단계 결과 오버레이에서 다음 단계 버튼 누를 때
 // [수정 3]: handleResultNextStep() 함수 교체
   function handleResultNextStep() {
+    SoundFX.playDudung();
     const nextLabel = document.getElementById('btnNextQuestionLabel');
     // ✅ 고정된 전체 문항 수(totalQuizCount)를 기준으로 판정하여 1문제 만에 끝나는 현상 원천 차단!
     const totalQ = window.totalQuizCount || quizQuestions.length;
