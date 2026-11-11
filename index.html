@@ -4023,7 +4023,8 @@ function renderQuizEditor() {
 // ==================== 8. 호스트 게임 로비 오픈 ====================
   function openGameLobby() {
     if (!quizQuestions.length) return alert("출제된 문항이 없습니다.");
-    
+    // 🎵 로비 진입 시 대기실 BGM 즉시 재생
+    SoundFX.playBGM('lobby', 0.25);
     if (!currentGameMode) currentGameMode = 'classic';
     serverJoystickModeFlag = (currentGameMode === 'accuracy');
     console.log("🎮 [로비 오픈 진입] 현재 적용된 게임 모드:", currentGameMode);
@@ -4250,7 +4251,6 @@ if (window.location.protocol === 'file:') {
       });
     }
     // 로비 BGM
-    SoundFX.playBGM('lobby', 0.25);
   } // ◀ openGameLobby() 끝
 
   // ⚖️ [신규 헬퍼 함수] 전체 인원(학생+봇)을 무조건 5:5(홍팀=청팀)로 정확히 나누는 함수
@@ -6473,8 +6473,9 @@ function startNextQuestion() {
 
 
 function executeActualQuestion(q, timerEl) {
-  SoundFX.playBGM(currentGameMode || 'classic', 0.30);
     try {
+// 🎵 퀴즈 및 게임 모드 시작 시 현재 모드(currentGameMode)에 맞는 BGM 즉시 재생
+      SoundFX.playBGM(currentGameMode || 'classic', 0.30);      
       roomState.status = "question";
       questionStartTime = Date.now();
       roomState.qStartTime = questionStartTime;
@@ -8438,6 +8439,7 @@ let myRoundTugTaps = 0;
 // 최종 명예의 전당 확실한 화면 전환
 // [수정 1]: showFinalPodium() 함수 교체
   function showFinalPodium() {
+// 🎵 최종 시상대 진입 시 podium BGM 즉시 재생
     SoundFX.playBGM('podium', 0.35);
     if (mpActionTimer) { clearInterval(mpActionTimer); mpActionTimer = null; }
     clearInterval(timerInterval);
