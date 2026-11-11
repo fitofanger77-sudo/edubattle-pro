@@ -1747,14 +1747,91 @@ if (sheet && sheet.complete && sheet.naturalWidth > 0) {
   let launcherState = { selectedClassIndex: 0, selectedQuizId: null, selectedMode: 'classic' };
 
   // ==================== 3. 사운드 & 학년 색상 테마 ====================
+// 🎵 게임 모드별 구글 드라이브 AI 생성 BGM 매핑 완료
+  const GAME_BGM_TRACKS = {
+    lobby: "https://docs.google.com/uc?export=download&id=1Y4LRU4TEj0UWyRo5nx5YG4eer13tY66l",             // 대기실 (lobby.wav)
+    classic: "https://docs.google.com/uc?export=download&id=1kwuUtpg_onVgkS6roje0AHNFCZmFWvF4",         // 스피드런 (classic.wav)
+    accuracy: "https://docs.google.com/uc?export=download&id=1QXQoCfp3N9QJ94aXdt2URA70RNvFqjcJ",        // 정답구역 서바이벌 (accuracy.wav)
+    team: "https://docs.google.com/uc?export=download&id=1MGH6jKIoUGSTBQtZopW04SHIsK6joVWx",             // 홍팀청팀 줄다리기 (team.wav)
+    kingdom: "https://docs.google.com/uc?export=download&id=1F-24ytpGrw7nOUYdVPk_eItBG1Mf6qso",          // 몬스터 퇴치 / 보스전 (kingdom.wav)
+    masterpiece: "https://docs.google.com/uc?export=download&id=1GWqJL-MW_YFyR3BRCL9R0Zx-CQq6GzNu",     // 맞췄으면 칠해 (masterpiece.wav)
+    podium: "https://docs.google.com/uc?export=download&id=1Ve6KFut4miA9vpLs7m_7xwhw784rVOGz"            // 최종 시상대 (podium.wav)
+  };
+
   const SoundFX = {
-    muted: false, ctx: null,
+    muted: false, 
+    ctx: null,
+    currentBgm: null,
+    currentTrackKey: null,
+
     init() {
       if (!this.ctx) {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         if (AudioCtx) this.ctx = new AudioCtx();
       }
     },
+
+// 🎵 업그레이드된 BGM 재생 함수 (스트리밍 안정성 강화)
+    playBGM(trackKey, volume = 0.35) {
+      if (this.muted) return;
+      const url = GAME_BGM_TRACKS[trackKey] || GAME_BGM_TRACKS['classic'];
+      if (!url) return;
+      
+      // 이미 같은 곡이 재생 중이면 중복 실행 방지
+      if (this.currentTrackKey === trackKey && this.currentBgm) {
+        if (this.currentBgm.paused) {
+          this.currentBgm.play().catch(e => console.warn("BGM 재개 실패:", e));
+        }
+        return;
+      }
+
+      this.stopBGM();
+
+      try {
+        const audio = new Audio();
+        audio.crossOrigin = "anonymous";
+        audio.src = url;
+        audio.loop = true;
+        audio.volume = volume;
+        
+        // 로드 완료 후 재생 시도
+        audio.load();
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.then(() => {
+            console.log(`🎵 BGM 재생 성공: ${trackKey}`);
+          }).catch(error => {
+            console.warn(`⚠️ BGM 자동 재생 차단 또는 로딩 대기 중 (${trackKey}):`, error);
+          });
+        }
+
+        this.currentBgm = audio;
+        this.currentTrackKey = trackKey;
+      } catch (err) {
+        console.error("BGM 객체 생성 오류:", err);
+      }
+    },
+
+    // ⏹️ BGM 정지 함수
+    stopBGM() {
+      if (this.currentBgm) {
+        this.currentBgm.pause();
+        this.currentBgm.currentTime = 0;
+        this.currentBgm = null;
+        this.currentTrackKey = null;
+      }
+    },
+
+    // 음소거 토글 연동
+    setMute(isMuted) {
+      this.muted = isMuted;
+      if (this.muted) {
+        if (this.currentBgm) this.currentBgm.pause();
+      } else {
+        if (this.currentBgm) this.currentBgm.play().catch(() => {});
+      }
+    },
+
     beep(freq = 440, duration = 0.12, type = 'sine', vol = 0.08) {
       if (this.muted) return;
       try {
@@ -1777,12 +1854,11 @@ if (sheet && sheet.complete && sheet.naturalWidth > 0) {
     playBombExplosion() { this.beep(110, 0.35, 'sawtooth', 0.15); },
     playYaNeoDuSiren() { this.beep(600, 0.15, 'square'); setTimeout(() => this.beep(900, 0.2, 'square'), 160); },
     playRankSwap() { this.beep(784, 0.12, 'triangle'); },
-    playPodiumFanfare() { this.playCorrect(); },
-    stopBGM() {}
+    playPodiumFanfare() { this.playCorrect(); }
   };
 
   function toggleSoundMute() {
-    SoundFX.muted = !SoundFX.muted;
+    SoundFX.setMute(!SoundFX.muted);
     const txt = SoundFX.muted ? "🔇 사운드 OFF" : "🔊 사운드 ON";
     if (document.getElementById('btnSoundToggle')) document.getElementById('btnSoundToggle').textContent = txt;
     if (document.getElementById('btnHostSoundToggle')) document.getElementById('btnHostSoundToggle').textContent = txt;
@@ -3534,21 +3610,31 @@ function renderQuizEditor() {
   }
 
   function launchQuizFromRunTab() {
-    const classes = getSavedClasses();
-    const selClass = classes[launcherState.selectedClassIndex] || { name: "1학년 5반" };
-    if (!launcherState.selectedQuizId) return alert("진행할 퀴즈 세트를 먼저 선택해 주세요!");
-    const quizItem = getSavedLibrary().find(q => q.id === launcherState.selectedQuizId);
-    if (!quizItem || !quizItem.questions?.length) return alert("선택한 퀴즈에 문항이 없습니다.");
+    try {
+      const classes = getSavedClasses();
+      const selClass = classes[launcherState.selectedClassIndex] || { name: "1학년 5반" };
+      if (!launcherState.selectedQuizId) return alert("진행할 퀴즈 세트를 먼저 선택해 주세요!");
+      const quizItem = getSavedLibrary().find(q => q.id === launcherState.selectedQuizId);
+      if (!quizItem || !quizItem.questions?.length) return alert("선택한 퀴즈에 문항이 없습니다.");
 
-    quizQuestions = quizItem.questions.map(q => normalizeQuestionObject(q));
-    currentQuizTitle = quizItem.title;
-    currentClassName = selClass.name;
-    
-    currentGameMode = launcherState.selectedMode || 'classic';
-    serverJoystickModeFlag = (currentGameMode === 'accuracy');
-    console.log("🚀 [최종 런처 시작] 확정된 게임 모드:", currentGameMode);
+      quizQuestions = quizItem.questions.map(q => normalizeQuestionObject(q));
+      currentQuizTitle = quizItem.title;
+      currentClassName = selClass.name;
+      
+      currentGameMode = launcherState.selectedMode || 'classic';
+      serverJoystickModeFlag = (currentGameMode === 'accuracy');
+      console.log("🚀 [최종 런처 시작] 확정된 게임 모드:", currentGameMode);
 
-    openGameLobby();
+      // 🛡️ 재시작 전 이전 플래그 완전 초기화
+      isHostingActive = true;
+      currentQuestionIndex = -1;
+      if (typeof isTransitioningQuestion !== 'undefined') isTransitioningQuestion = false;
+
+      openGameLobby();
+    } catch (err) {
+      console.error("배틀 시작 오류:", err);
+      alert("배틀 시작 중 오류가 발생했습니다: " + err.message);
+    }
   }
 
   function openQuizPreviewModal(quizId) {
@@ -4003,7 +4089,8 @@ function renderQuizEditor() {
   if (themeSelect) themeSelect.value = savedTheme;
   changeLobbyBackgroundTheme(savedTheme);
 
-    // 👇 이전 화면 완벽하게 닫고 로비만 열기
+    
+// 👇 이전 화면 완벽하게 닫고 로비만 열기
     document.getElementById('setupWrap')?.classList.add('hidden');
     
     // 🛡️ [버그 수정] 종료 시 걸려있던 display: none 속성을 flex로 강제 복구해야 다음 퀴즈 시작 시 뻗지 않습니다!
@@ -4029,6 +4116,7 @@ function renderQuizEditor() {
       lobbyView.classList.remove('hidden');
       lobbyView.style.display = 'flex';
     }
+
 
 // 👇 로비 화면 레이아웃 재구성 (상단 정보 + 하단 대형 ZEP 대기실)
     const lobbyCanvas = document.getElementById('lobbyArenaCanvas');
@@ -4161,6 +4249,8 @@ if (window.location.protocol === 'file:') {
         }
       });
     }
+    // 로비 BGM
+    SoundFX.playBGM('lobby', 0.25);
   } // ◀ openGameLobby() 끝
 
   // ⚖️ [신규 헬퍼 함수] 전체 인원(학생+봇)을 무조건 5:5(홍팀=청팀)로 정확히 나누는 함수
@@ -4330,7 +4420,8 @@ function addSimulatedStudents(count = 5) {
     if (!confirm("진행 중인 화면을 종료하시겠습니까?")) return;
     isHostingActive = false;
     roomState.status = "closed";
-
+    //BGM 종료
+    SoundFX.stopBGM();
     // 모든 타이머 및 애니메이션 루프 강제 종료
     clearInterval(timerInterval); timerInterval = null;
     if (typeof preCountdownInterval !== 'undefined' && preCountdownInterval) { clearInterval(preCountdownInterval); preCountdownInterval = null; }
@@ -6382,6 +6473,7 @@ function startNextQuestion() {
 
 
 function executeActualQuestion(q, timerEl) {
+  SoundFX.playBGM(currentGameMode || 'classic', 0.30);
     try {
       roomState.status = "question";
       questionStartTime = Date.now();
@@ -8346,6 +8438,7 @@ let myRoundTugTaps = 0;
 // 최종 명예의 전당 확실한 화면 전환
 // [수정 1]: showFinalPodium() 함수 교체
   function showFinalPodium() {
+    SoundFX.playBGM('podium', 0.35);
     if (mpActionTimer) { clearInterval(mpActionTimer); mpActionTimer = null; }
     clearInterval(timerInterval);
     if (preCountdownInterval) { clearInterval(preCountdownInterval); preCountdownInterval = null; }
