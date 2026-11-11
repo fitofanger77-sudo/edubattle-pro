@@ -5031,6 +5031,7 @@ function evaluateSurvivalArenaRound() {
     // [2단계: 최종 보스 실시간 대격돌] 퀴즈가 모두 끝난 후 보스 레이드 경기장 진입
     // =========================================================================
     startFinalBossRaid() {
+      SoundFX.playBGM('kingdom', 0.35);
       this.initAssets();
       this.active = true;
       this.remainSec = 60;
@@ -6642,7 +6643,6 @@ function triggerSimulatedBotsForRound() {
         playerObj.maxComboStreak = Math.max(playerObj.maxComboStreak || 0, playerObj.comboStreak);
       }
     } else if (currentGameMode === 'masterpiece') {
-      SoundFX.playBgm('masterpiece', 0.35); // 🎨 명화 긁기 화면 진입 시 masterpiece.wav 재생
       coopState.revealedMasterpieceTiles = Math.min(16, coopState.revealedMasterpieceTiles + 2);
     } else if (currentGameMode === 'submarine') {
       coopState.submarineDepth = Math.max(0, coopState.submarineDepth - 15);
@@ -6969,10 +6969,10 @@ function revealAnswerAndLeaderboard() {
         }, 1000);
 
 } else if (currentGameMode === 'team') {
-        SoundFX.playBGM('team', 0.35); // 🪢 줄다리기 연타 화면 진입 시 team.wav 재생
         // 🪢 [줄다리기 전용] 5:5 팀 밸런스 재확인 + 10초 카운트다운 + 마지막 라운드 피날레 연출!
         if (typeof rebalanceTeamsEqually === 'function') rebalanceTeamsEqually();
         document.getElementById('tugWinLoseFinaleOverlay')?.remove();
+        SoundFX.playBGM('team', 0.35); // 🪢 줄다리기 연타 화면 진입 시 team.wav 재생
 
         if (leftCol) leftCol.className = "lg:col-span-12 bg-slate-950 border-2 border-cyan-500/60 rounded-2xl p-4 flex flex-col justify-between space-y-3 shadow-2xl";
         if (rightCol) rightCol.classList.add('hidden');
@@ -7068,6 +7068,7 @@ function revealAnswerAndLeaderboard() {
         ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, W, H);
 
         if (currentGameMode === 'masterpiece') {
+          SoundFX.playBgm('masterpiece', 0.35); // 🎨 명화 긁기 화면 진입 시 masterpiece.wav 재생
           ctx.clearRect(0, 0, W, H);
           if (!mpFullRevealed) {
             ctx.fillStyle = '#1e293b';
