@@ -6489,8 +6489,9 @@ function startNextQuestion() {
 
 function executeActualQuestion(q, timerEl) {
     try {
-// 🎵 퀴즈 및 게임 모드 시작 시 현재 모드(currentGameMode)에 맞는 BGM 즉시 재생
-      SoundFX.playBGM(currentGameMode || 'classic', 0.30);      
+      // 🎵 평상시 모든 문제 풀이 때는 공통 classic BGM으로 재생
+      SoundFX.playBGM('classic', 0.30);
+
       roomState.status = "question";
       questionStartTime = Date.now();
       roomState.qStartTime = questionStartTime;
@@ -6519,6 +6520,7 @@ function executeActualQuestion(q, timerEl) {
           arenaWrap.style.display = 'block';
         }
         SurvivalArenaEngine.start();
+        SoundFX.playBGM('accuracy', 0.35);
       } else {
         SurvivalArenaEngine.stop();
         if (arenaWrap) {
@@ -6640,6 +6642,7 @@ function triggerSimulatedBotsForRound() {
         playerObj.maxComboStreak = Math.max(playerObj.maxComboStreak || 0, playerObj.comboStreak);
       }
     } else if (currentGameMode === 'masterpiece') {
+      SoundFX.playBgm('masterpiece', 0.35); // 🎨 명화 긁기 화면 진입 시 masterpiece.wav 재생
       coopState.revealedMasterpieceTiles = Math.min(16, coopState.revealedMasterpieceTiles + 2);
     } else if (currentGameMode === 'submarine') {
       coopState.submarineDepth = Math.max(0, coopState.submarineDepth - 15);
@@ -6871,6 +6874,8 @@ function revealAnswerAndLeaderboard() {
         }
         if (currentGameMode === 'kingdom') {
           RoguelikeRaidEngine.startFinalBossRaid();
+          // ⚔️ 최종 보스전 화면 진입 시 kingdom.wav 재생
+          SoundFX.playBGM('kingdom', 0.35);
         } else {
           showFinalPodium();
         }
@@ -6964,6 +6969,7 @@ function revealAnswerAndLeaderboard() {
         }, 1000);
 
 } else if (currentGameMode === 'team') {
+        SoundFX.playBGM('team', 0.35); // 🪢 줄다리기 연타 화면 진입 시 team.wav 재생
         // 🪢 [줄다리기 전용] 5:5 팀 밸런스 재확인 + 10초 카운트다운 + 마지막 라운드 피날레 연출!
         if (typeof rebalanceTeamsEqually === 'function') rebalanceTeamsEqually();
         document.getElementById('tugWinLoseFinaleOverlay')?.remove();
