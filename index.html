@@ -673,23 +673,38 @@
           </div>
         </div>
 
-        <!-- 🕵️‍♂️ [신규 추가] 마피아의 정답: 내 비밀 직업 & 마피아 정답 스포일러 바 -->
-        <div id="studentMafiaRoleBar" class="hidden bg-slate-900 border-2 border-rose-500/80 p-3.5 rounded-2xl space-y-1.5 text-left shadow-xl">
-          <div class="flex justify-between items-center">
-            <span id="stuMafiaRoleBadge" class="text-xs font-black px-2.5 py-1 rounded-full bg-slate-800 text-white">🕵️‍♂️ 역할 배정 대기 중</span>
-            <span id="stuMafiaPenaltyBadge" class="hidden text-[11px] font-black px-2.5 py-0.5 rounded-full bg-rose-600 text-white animate-pulse">⚠️ 의심 낙인! 이번 라운드 점수 50% 너프</span>
+<!-- 🕵️‍♂️ [비주얼 업그레이드] 마피아의 정답: 스마트폰 기밀 신분증 & 캐릭터 사진 카드 -->
+        <div id="studentMafiaRoleBar" class="hidden relative overflow-hidden bg-slate-950 border-2 border-rose-500/90 p-4 rounded-3xl text-left shadow-2xl">
+          <img id="stuMafiaCardBgImg" src="" alt="" class="hidden absolute inset-0 w-full h-full object-cover opacity-25 pointer-events-none">
+          <div class="relative z-10 flex items-center gap-3.5">
+            <!-- 역할 전용 사진/일러스트 액자 -->
+            <div class="w-16 h-16 rounded-2xl bg-slate-900 border-2 border-amber-400/80 overflow-hidden shrink-0 flex items-center justify-center shadow-lg">
+              <img id="stuMafiaRolePhoto" src="" alt="역할 사진" class="hidden w-full h-full object-cover">
+              <span id="stuMafiaRoleFallbackIcon" class="text-4xl">🕵️‍♂️</span>
+            </div>
+            <div class="flex-1 min-w-0 space-y-1">
+              <div class="flex flex-wrap justify-between items-center gap-1">
+                <span id="stuMafiaRoleBadge" class="text-xs font-black px-3 py-1 rounded-full bg-rose-600 text-white shadow">🕵️‍♂️ 기밀 신분 확인 중</span>
+                <span id="stuMafiaPenaltyBadge" class="hidden text-[11px] font-black px-2.5 py-0.5 rounded-full bg-red-600 text-white border border-yellow-300 animate-pulse">🚨 용의자 낙인 (점수 50%)</span>
+              </div>
+              <div id="stuMafiaSecretHint" class="text-xs font-bold text-amber-200 break-keep leading-snug bg-black/50 p-2 rounded-xl border border-white/10">
+                첫 문제가 시작되면 당신의 기밀 신분증(마피아 / 시민 탐정)이 발급됩니다.
+              </div>
+            </div>
           </div>
-          <div id="stuMafiaSecretHint" class="text-xs font-bold text-amber-300 break-keep">게임이 시작되면 내 비밀 역할(마피아·경찰·의사·시민)이 공개됩니다.</div>
         </div>
 
-        <!-- 🗳️ [신규 추가] 마피아의 정답: 라운드 종료 후 실시간 투표 & 경찰/의사 능력 패드 -->
-        <div id="studentMafiaActionBox" class="hidden flex-col gap-3 w-full bg-slate-900 p-5 rounded-3xl border-4 border-rose-500 shadow-2xl text-left">
-          <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-            <span class="text-sm font-black text-rose-400">🗳️ 마피아 용의자 지목 투표 (상위 50% 대상)</span>
-            <span class="text-[11px] font-bold text-amber-300">최다 득표자 다음 라운드 점수 50% 반토막!</span>
+        <!-- 🗳️ [비주얼 업그레이드] 마피아의 정답: 용의자 수배 전단지 지목 패드 -->
+        <div id="studentMafiaActionBox" class="hidden relative overflow-hidden flex-col gap-3 w-full bg-slate-950 p-5 rounded-3xl border-4 border-rose-600 shadow-2xl text-left">
+          <div class="bg-amber-400 text-slate-950 text-[11px] font-black px-3 py-1 rounded-md tracking-widest text-center shadow">
+            ⚠️ CRIME SCENE INVESTIGATION — DO NOT CROSS ⚠️
           </div>
-          <p class="text-xs text-slate-300">연속 정답 기록을 참고하여 가장 의심스러운 상위권 플레이어 1명을 지목하세요!</p>
-          <div id="stuMafiaVoteCandidateGrid" class="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1"></div>
+          <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+            <span class="text-sm font-black text-rose-400">🗳️ 상위 50% 용의자 긴급 지목 투표</span>
+            <span class="text-[11px] font-bold text-amber-300">1위 지목 시 다음 점수 50% 너프!</span>
+          </div>
+          <p class="text-xs text-slate-300">수상하게 연속 정답을 맞히며 상위 25%를 노리는 마피아 용의자를 터치해 수배 도장을 찍으세요!</p>
+          <div id="stuMafiaVoteCandidateGrid" class="grid grid-cols-2 gap-2.5 max-h-64 overflow-y-auto pr-1"></div>
         </div>
 
         <!-- 확신도 모드 전용 배팅 -->
@@ -1665,11 +1680,11 @@ if (sheet && sheet.complete && sheet.naturalWidth > 0) {
 
   // ==================== 1. 13대 배틀 게임 모드 정의 ====================
   const GAME_MODES_CATALOG = [
-    { key: 'formative', icon: '🎯', title: '아케이드 형성평가', badge: '칠판 추첨', desc: '중복 없는 번호 뽑기 & 칠판 터치', color: 'text-amber-300' },
-    { key: 'classic', icon: '🚀', title: '스피드런', desc: '빠르게 맞힐수록 높은 점수를 획득하는 모드' },
-    { key: 'accuracy', icon: '🎯', title: '정답구역서바이벌', desc: '조이스틱으로 정답 구역을 찾아 이동하는 모드' },
+    { key: 'formative', icon: '🎯', title: '아케이드 형성평가', badge: '칠판추첨', desc: '중복 없는 번호 뽑기 & 칠판 터치', color: 'text-amber-300' },
+    { key: 'classic', icon: '🚀', title: '스피드런', badge: '기본퀴즈', desc: '빠르게 맞힐수록 높은 점수를 획득하는 모드' },
+    { key: 'accuracy', icon: '🎯', title: '정답구역서바이벌', badge: '이동조작', desc: '조이스틱으로 정답 구역을 찾아 이동하는 모드' },
     { key: 'confidence', icon: '🎲', title: '자신있으면걸어봐', badge: '점수 2배 배팅', desc: '문제 풀기 전 확신도(50%·100%·200%)를 선택! 맞히면 2배 대박, 틀리면 감점!', color: 'text-rose-300' },
-    { key: 'team', icon: '🪢', title: '홍팀청팀줄다리기', badge: 'RED vs BLUE', desc: '학급이 홍팀과 청팀으로 나뉘어 정답 힘으로 밧줄을 당기는 협동 줄다리기!', color: 'text-cyan-300' },
+    { key: 'team', icon: '🪢', title: '홍팀청팀줄다리기', badge: '팀전', desc: '학급이 홍팀과 청팀으로 나뉘어 정답 힘으로 밧줄을 당기는 협동 줄다리기!', color: 'text-cyan-300' },
     { key: 'kingdom', icon: '⚔️', title: '몬스터 퇴치', badge: 'RPG 파밍&협동', desc: '문제마다 보상 카드를 골라 캐릭터를 강화하고 최종 보스를 실시간 레이드로 격파!', color: 'text-purple-300' },    
     { key: 'submarine', icon: '🕵️‍♂️', title: '마피아의 정답', badge: '심리전&추리', desc: '정답을 아는 마피아는 상위 25%를 노리고, 시민은 상위 50% 안의 마피아를 투표로 색출하라!', color: 'text-rose-400' },
     { key: 'tower', icon: '🧱', title: '하늘끝까지탑쌓기', badge: '고층 블록쌓기', desc: '정답을 맞힐 때마다 내 캐릭터 블록이 한 층씩 위로 솟아오르는 마천루 경쟁!', color: 'text-amber-400' },
@@ -4934,23 +4949,50 @@ function evaluateSurvivalArenaRound() {
     { id: 'thunder', name: '🌩️ 벼락 소환', desc: '4초마다 보스에게 자동 벼락 낙하', type: 'item', apply: (s) => { s.thunder = (s.thunder || 0) + 1; s.items.push('🌩️벼락'); } }
   ];
 
-// =========================================================================
-  // 🕵️‍♂️ [개편] 《마피아의 정답》 심리 추리 퀴즈 배틀 엔진 (마피아 vs 시민)
+// 🎨 [마피아의 정답 전용 사진/이미지 에셋 설정]
+  // 구글 드라이브 직링크(https://lh3.googleusercontent.com/d/파일ID) 또는 ./images/파일명.png 를 넣으면 즉시 반영됩니다!
+  const MAFIA_CUSTOM_ASSETS = {
+    courtroomBgUrl: './images/mafia_court_bg.png',     // 전자칠판 재판장/수사본부 배경 사진
+    questionBgUrl: './images/mafia_night_bg.png',      // 마피아 모드 문제 풀이 시 전자칠판 배경 사진
+    mafiaCharUrl: './images/char_mafia.png',           // 마피아(스파이) 캐릭터 일러스트 사진
+    citizenCharUrl: './images/char_detective.png',     // 시민(탐정) 캐릭터 일러스트 사진
+    suspectCardBgUrl: './images/wanted_poster_bg.png', // 칠판 용의자 수배 전단지 카드 배경 사진
+    stampSuspectUrl: './images/stamp_suspect.png'      // 투표 지목 시 찍히는 '용의자(SUSPECT)' 도장 이미지
+  };
+
+  // =========================================================================
+  // 🕵️‍♂️ [비주얼 & 사운드 개편] 《마피아의 정답》 심리 추리 퀴즈 배틀 엔진
   // =========================================================================
   const MafiaGameEngine = {
     rolesAssigned: false,
     roundTimerId: null,
     remSec: 15,
-    votesMap: {},          // { voterId: targetId }
-    voteCounts: {},        // { targetId: count }
-    mafiaCaughtCount: 0,   // 시민들이 마피아를 1위로 지목한 누적 횟수
-    firstCaughtQIndex: -1, // 최초로 마피아가 지목된 문제 번호
-    currentSpoilerChance: 1.0, // 현재 문제의 마피아 정답 유출 확률 (1.0 = 100%)
-    isSpoilerActiveThisQ: true,// 이번 문제에서 실제로 마피아에게 정답이 공개되었는지 여부
+    images: {},
+    assetsLoaded: false,
+    votesMap: {},
+    voteCounts: {},
+    mafiaCaughtCount: 0,
+    firstCaughtQIndex: -1,
+    currentSpoilerChance: 1.0,
+    isSpoilerActiveThisQ: true,
     lastAccusedInfo: null,
     finalResultBanner: null,
 
+    initAssets() {
+      if (this.assetsLoaded) return;
+      this.assetsLoaded = true;
+      Object.keys(MAFIA_CUSTOM_ASSETS).forEach(key => {
+        const url = MAFIA_CUSTOM_ASSETS[key];
+        if (url) {
+          const img = new Image();
+          img.src = url;
+          this.images[key] = img;
+        }
+      });
+    },
+
     reset() {
+      this.initAssets();
       this.rolesAssigned = false;
       if (this.roundTimerId) clearInterval(this.roundTimerId);
       this.votesMap = {};
@@ -4963,8 +5005,8 @@ function evaluateSurvivalArenaRound() {
       this.finalResultBanner = null;
     },
 
-    // 1. 첫 문제 시작 시 마피아(약 15%)와 시민 배정
     assignRolesIfNeeded() {
+      this.initAssets();
       if (currentGameMode !== 'submarine' || this.rolesAssigned) return;
       const allPlayers = Object.values(roomState.players || {}).filter(p => p.online !== false);
       if (!allPlayers.length) return;
@@ -4977,7 +5019,6 @@ function evaluateSurvivalArenaRound() {
       const totalP = allPlayers.length;
       const totalQ = window.totalQuizCount || quizQuestions.length || 8;
 
-      // 전체 인원의 약 15%를 마피아로 배정 (최소 1명 ~ 최대 5명)
       let mafiaCount = Math.max(1, Math.min(5, Math.round(totalP * 0.15)));
       if (totalQ <= 3) mafiaCount = Math.max(1, Math.min(2, mafiaCount));
 
@@ -5008,7 +5049,6 @@ function evaluateSurvivalArenaRound() {
       });
     },
 
-    // 2. 매 문제 시작 시 현재 누적된 마피아 정답 유출 확률로 스포일러 여부 추첨
     prepareQuestionSpoiler(qIdx) {
       if (currentGameMode !== 'submarine') return;
       if (this.currentSpoilerChance > 0.999) this.currentSpoilerChance = 1.0;
@@ -5024,8 +5064,9 @@ function evaluateSurvivalArenaRound() {
       }
     },
 
-    // 3. 학생 스마트폰 상단에 내 역할 및 마피아 정답 스포일러(또는 차단 알림) 표시
+    // 스마트폰 상단 신분증 카드 & 캐릭터 사진 업데이트
     updateStudentRoleUI() {
+      this.initAssets();
       const bar = document.getElementById('studentMafiaRoleBar');
       if (!bar) return;
       if (currentGameMode !== 'submarine') {
@@ -5039,8 +5080,34 @@ function evaluateSurvivalArenaRound() {
       const badgeEl = document.getElementById('stuMafiaRoleBadge');
       const penEl = document.getElementById('stuMafiaPenaltyBadge');
       const hintEl = document.getElementById('stuMafiaSecretHint');
+      const photoEl = document.getElementById('stuMafiaRolePhoto');
+      const iconEl = document.getElementById('stuMafiaRoleFallbackIcon');
+      const bgImgEl = document.getElementById('stuMafiaCardBgImg');
 
       if (penEl) penEl.classList.toggle('hidden', !me.mafiaHalfPenalty);
+
+      // 배경 사진 및 역할 캐릭터 사진 자동 바인딩 (로드 성공 시 사진 표시, 없으면 고화질 아이콘 표시)
+      if (bgImgEl && MAFIA_CUSTOM_ASSETS.courtroomBgUrl) {
+        bgImgEl.src = MAFIA_CUSTOM_ASSETS.courtroomBgUrl;
+        bgImgEl.onload = () => bgImgEl.classList.remove('hidden');
+        bgImgEl.onerror = () => bgImgEl.classList.add('hidden');
+      }
+
+      const targetPhotoUrl = (role === 'MAFIA') ? MAFIA_CUSTOM_ASSETS.mafiaCharUrl : MAFIA_CUSTOM_ASSETS.citizenCharUrl;
+      if (photoEl && targetPhotoUrl) {
+        photoEl.src = targetPhotoUrl;
+        photoEl.onload = () => {
+          photoEl.classList.remove('hidden');
+          if (iconEl) iconEl.classList.add('hidden');
+        };
+        photoEl.onerror = () => {
+          photoEl.classList.add('hidden');
+          if (iconEl) {
+            iconEl.classList.remove('hidden');
+            iconEl.textContent = (role === 'MAFIA') ? '🕶️' : '🕵️‍♂️';
+          }
+        };
+      }
 
       const q = normalizeQuestionObject(quizQuestions[roomState.currentQIndex] || {});
       let answerSpoiler = '';
@@ -5054,28 +5121,29 @@ function evaluateSurvivalArenaRound() {
       const chancePct = Math.round(this.currentSpoilerChance * 100);
 
       if (role === 'MAFIA') {
+        bar.className = "relative overflow-hidden bg-gradient-to-r from-rose-950 via-slate-950 to-rose-950 border-2 border-rose-500 p-4 rounded-3xl text-left shadow-2xl";
         badgeEl.className = "text-xs font-black px-3 py-1 rounded-full bg-rose-600 text-white shadow";
-        badgeEl.textContent = `🕵️‍♂️ [마피아] 동료: ${me.mafiaTeammates || '단독'} (정답 유출률 ${chancePct}%)`;
+        badgeEl.textContent = `🕶️ 코드네임: 마피아 (동료: ${me.mafiaTeammates || '단독'} · 유출률 ${chancePct}%)`;
 
         if (roomState.status === 'question' || roomState.status === 'pre-question') {
           if (this.isSpoilerActiveThisQ && answerSpoiler) {
-            hintEl.innerHTML = `🤫 <b class="text-rose-300">[마피아 기밀 정답]: ${escapeHtml(answerSpoiler)}</b><br><span class="text-[11px] text-slate-300">※ 최종 상위 25% 안에 들어야 승리합니다! 너무 연속으로 맞히면 의심받습니다.</span>`;
+            hintEl.innerHTML = `📂 <b class="text-rose-300">[기밀 정답 입수]: ${escapeHtml(answerSpoiler)}</b><br><span class="text-[11px] text-slate-300">※ 최종 상위 25% 안에 들어야 승리합니다! 너무 연속으로 맞히면 수배 대상이 됩니다.</span>`;
           } else {
-            hintEl.innerHTML = `📵 <b class="text-amber-400">[정보망 교란됨!]</b> 시민들에게 마피아가 지목되어 이번 문제는 정답이 유출되지 않았습니다! 실력으로 맞히세요!`;
+            hintEl.innerHTML = `📵 <b class="text-amber-400">[통신망 차단됨!]</b> 시민 수사대에 꼬리가 잡혀 이번 문제는 정답 스포일러가 차단되었습니다!`;
           }
         } else {
-          hintEl.innerHTML = `🎯 미션: 정체를 숨기고 최종 순위 <b>상위 25% 이내</b>에 진입하세요! (현재 정답 유출 확률: <b>${chancePct}%</b>)`;
+          hintEl.innerHTML = `🎯 지령: 정체를 숨기고 최종 순위 <b>상위 25% 이내</b>에 잠입하세요! (현재 정답 유출률: <b>${chancePct}%</b>)`;
         }
       } else {
-        badgeEl.className = "text-xs font-black px-3 py-1 rounded-full bg-indigo-600 text-white shadow";
-        badgeEl.textContent = `👥 당신은 [선량한 시민]입니다!`;
+        bar.className = "relative overflow-hidden bg-gradient-to-r from-indigo-950 via-slate-950 to-slate-900 border-2 border-amber-400/80 p-4 rounded-3xl text-left shadow-2xl";
+        badgeEl.className = "text-xs font-black px-3 py-1 rounded-full bg-amber-400 text-slate-950 shadow";
+        badgeEl.textContent = `🕵️‍♂️ 코드네임: 시민 특별수사관`;
         hintEl.innerHTML = this.mafiaCaughtCount >= 1
-          ? `🔥 마피아 검거 성공! 마피아의 정답 유출 확률이 매 문제 감소하여 현재 <b>${chancePct}%</b>까지 떨어졌습니다!`
-          : `문제를 풀어 점수를 올리고, 상위 50% 안에서 수상하게 연속 정답을 맞히는 마피아를 투표로 찾아내세요!`;
+          ? `🚨 마피아 검거 성공! 마피아의 정답 유출 확률을 현재 <b>${chancePct}%</b>로 억제하고 있습니다!`
+          : `상위 50% 용의자 중 수상하게 연속 정답을 맞히는 마피아를 투표로 지목해 정답 유출을 차단하세요!`;
       }
     },
 
-    // 4. 상위 50% 투표 대상자 목록 추출
     getTop50Candidates() {
       const all = Object.values(roomState.players || {})
         .filter(p => p.online !== false)
@@ -5084,9 +5152,8 @@ function evaluateSurvivalArenaRound() {
       return all.slice(0, cutCount);
     },
 
-    // 5. 라운드 액션(투표 페이즈) 시작
     startVotingPhase() {
-      // 🕵️‍♂️ 마피아 재판장(투표 단계) 진입 시 탐정 BGM 재생!
+      this.initAssets();
       SoundFX.playBGM('submarine', 0.35);
 
       this.votesMap = {};
@@ -5107,7 +5174,6 @@ function evaluateSurvivalArenaRound() {
 
       const candidates = this.getTop50Candidates();
 
-      // 봇들의 투표 시뮬레이션 (0.8초 ~ 5.5초 사이에 순차적으로 투표하여 칠판에서 실시간 증가 확인 가능)
       Object.values(roomState.players || {}).filter(p => p.isBot).forEach(bot => {
         setTimeout(() => {
           if (roomState.status !== 'action' || currentGameMode !== 'submarine') return;
@@ -5129,7 +5195,7 @@ function evaluateSurvivalArenaRound() {
 
       const mpTimerBadge = document.getElementById('mpActionTimerBadge');
       if (mpTimerBadge) {
-        mpTimerBadge.textContent = `🗳️ 마피아 지목 투표 중! 남은 시간: ${this.remSec}초`;
+        mpTimerBadge.textContent = `🗳️ 용의자 지목 투표 중! 남은 시간: ${this.remSec}초`;
         mpTimerBadge.classList.remove('hidden');
       }
 
@@ -5144,7 +5210,7 @@ function evaluateSurvivalArenaRound() {
           try { SoundFX.beep(780, 0.1, 'sawtooth', 0.07); } catch (e) {}
         }
         if (mpTimerBadge) {
-          mpTimerBadge.textContent = `🗳️ 마피아 지목 투표 중! 남은 시간: ${Math.max(0, this.remSec)}초`;
+          mpTimerBadge.textContent = `🗳️ 용의자 지목 투표 중! 남은 시간: ${Math.max(0, this.remSec)}초`;
         }
         if (this.remSec <= 0) {
           clearInterval(this.roundTimerId);
@@ -5161,7 +5227,6 @@ function evaluateSurvivalArenaRound() {
       this.voteCounts = counts;
     },
 
-    // 6. 투표 마감 및 1위 지목자 50% 점수 너프 + 마피아 적발 시 유출 확률 감소 트리거
     finalizeVoteRound() {
       if (db && currentPin) {
         db.ref(`rooms/${currentPin}/mafia_votes`).off();
@@ -5193,7 +5258,6 @@ function evaluateSurvivalArenaRound() {
       const mpTimerBadge = document.getElementById('mpActionTimerBadge');
 
       if (!topTarget || maxVotes === 0) {
-        // 📈 마피아가 지목되지 않고 무사히 넘어간 턴 -> 1 / 총문항수 만큼 유출 확률 회복!
         let recoverNotice = '';
         if (this.currentSpoilerChance < 0.999) {
           this.currentSpoilerChance = Math.min(1.0, this.currentSpoilerChance + step);
@@ -5216,12 +5280,10 @@ function evaluateSurvivalArenaRound() {
 
         let leakNotice = '';
         if (isTargetMafia) {
-          // 📉 마피아 적발 시 1 / 총문항수 만큼 정답 유출 확률 감소
           this.mafiaCaughtCount++;
           this.currentSpoilerChance = Math.max(0, this.currentSpoilerChance - step);
           leakNotice = ` 🕵️‍♂️ 마피아 적발! 정답 유출 확률 -${stepPct}% 감소 (현재 ${Math.round(this.currentSpoilerChance * 100)}%)`;
         } else {
-          // 📈 시민이 대신 지목되어 마피아가 살아남은 턴 -> 1 / 총문항수 만큼 유출 확률 회복!
           if (this.currentSpoilerChance < 0.999) {
             this.currentSpoilerChance = Math.min(1.0, this.currentSpoilerChance + step);
             leakNotice = ` 📈 마피아 미지목! 정답 유출 확률 +${stepPct}% 회복 (현재 ${Math.round(this.currentSpoilerChance * 100)}%)`;
@@ -5231,7 +5293,7 @@ function evaluateSurvivalArenaRound() {
         this.lastAccusedInfo = {
           title: `🚨 최다 득표 1위: [${cleanName}] (${maxVotes}표 획득!)`,
           sub: isLastQ
-            ? `최종 용의자 [${cleanName}]의 정체는... [${isTargetMafia ? '🕵️‍♂️ 진짜 마피아!!' : '😇 선량한 시민'}] 이었습니다!`
+            ? `최종 용의자 [${cleanName}]의 정체는... [${isTargetMafia ? '🕶️ 진짜 마피아!!' : '🕵️‍♂️ 선량한 시민'}] 이었습니다!`
             : `⚠️ [${cleanName}] 다음 라운드 점수 50% 반토막!${leakNotice}`,
           color: isTargetMafia ? '#34d399' : '#fb7185'
         };
@@ -5250,11 +5312,11 @@ function evaluateSurvivalArenaRound() {
 
         if (survivingTop25Mafias.length > 0 && !caughtMafiaOnFinal) {
           const names = survivingTop25Mafias.map(m => m.name.replace(/\(봇\)/g, '')).join(', ');
-          this.finalResultBanner = `🕵️‍♂️ [마피아 팀 최종 승리!!] 마피아(${names})가 정체를 숨기고 상위 25% 이내 안착에 성공했습니다!`;
+          this.finalResultBanner = `🕶️ [마피아 팀 최종 승리!!] 마피아(${names})가 정체를 숨기고 상위 25% 이내 안착에 성공했습니다!`;
           survivingTop25Mafias.forEach(m => { m.score = (m.score || 0) + 1500; });
         } else {
           const mafiaListStr = allMafias.map(m => m.name.replace(/\(봇\)/g, '')).join(', ');
-          this.finalResultBanner = `🎊 [시민 팀 최종 승리!!] 마피아(${mafiaListStr})를 검거하거나 상위 25% 진입을 완벽히 저지했습니다!`;
+          this.finalResultBanner = `🎊 [시민 수사대 최종 승리!!] 마피아(${mafiaListStr})를 검거하거나 상위 25% 진입을 완벽히 저지했습니다!`;
           sortedAll.filter(p => p.mafiaRole !== 'MAFIA').forEach(c => { c.score = (c.score || 0) + 1000; });
         }
         if (mpTimerBadge) mpTimerBadge.textContent = `🏁 최종 마피아 재판 완료! Space바를 눌러 명예의 전당으로 이동하세요!`;
@@ -5263,7 +5325,7 @@ function evaluateSurvivalArenaRound() {
       }
     },
 
-    // 7. 학생 스마트폰 투표 UI 렌더링 (경찰·의사 패널 제외)
+    // 스마트폰 수배 전단지 스타일 투표 패드
     renderStudentVotePad() {
       const box = document.getElementById('studentMafiaActionBox');
       if (!box) return;
@@ -5285,14 +5347,20 @@ function evaluateSurvivalArenaRound() {
           const cleanName = c.name.replace(/\(봇\)/g, '');
           const combo = c.comboStreak || 0;
           return `
-            <button type="button" onclick="MafiaGameEngine.castStudentVote('${c.id}')" class="p-2.5 rounded-xl border-2 text-left transition flex flex-col justify-between ${isPicked ? 'border-rose-400 bg-rose-950/80 scale-[1.02]' : 'border-slate-700 bg-slate-950 hover:border-slate-500'}">
-              <div class="flex justify-between items-center w-full">
-                <span class="font-black text-xs text-white truncate">${idx + 1}위. ${escapeHtml(cleanName)}</span>
-                ${isPicked ? '<span class="text-[10px] bg-rose-600 text-white px-1.5 py-0.5 rounded font-black">지목됨</span>' : ''}
+            <button type="button" onclick="MafiaGameEngine.castStudentVote('${c.id}')" class="relative overflow-hidden p-3 rounded-2xl border-2 text-left transition flex items-center gap-2.5 ${isPicked ? 'border-rose-500 bg-rose-950/90 scale-[1.02] shadow-lg' : 'border-amber-500/40 bg-slate-900/95 hover:border-amber-400'}">
+              <div class="w-10 h-10 rounded-xl bg-slate-950 border border-amber-400/50 flex items-center justify-center text-2xl shrink-0">
+                ${c.avatar || '🕵️‍♂️'}
               </div>
-              <div class="flex justify-between items-center mt-1 text-[11px]">
-                <span class="${combo >= 2 ? 'text-amber-300 font-black' : 'text-slate-400'}">🔥 ${combo}연속 정답</span>
-                <span class="text-indigo-300 font-bold">${(c.score || 0).toLocaleString()}점</span>
+              <div class="flex-1 min-w-0">
+                <div class="flex justify-between items-center">
+                  <span class="text-[10px] font-black text-amber-400 tracking-wider">WANTED #${idx + 1}</span>
+                  ${isPicked ? '<span class="text-[10px] bg-rose-600 text-white px-1.5 py-0.5 rounded font-black animate-bounce">🎯지목됨</span>' : ''}
+                </div>
+                <div class="font-black text-xs text-white truncate">${escapeHtml(cleanName)}</div>
+                <div class="flex justify-between items-center mt-0.5 text-[10px]">
+                  <span class="${combo >= 2 ? 'text-rose-400 font-black' : 'text-slate-400'}">🔥 ${combo}연속</span>
+                  <span class="text-amber-200 font-bold">${(c.score || 0).toLocaleString()}점</span>
+                </div>
               </div>
             </button>
           `;
@@ -5310,7 +5378,7 @@ function evaluateSurvivalArenaRound() {
       this.renderStudentVotePad();
     }
   };
-
+  
 
   const RoguelikeRaidEngine = {
     difficulty: 'normal',
@@ -6230,7 +6298,8 @@ function updateSubmissionProgressUI() {
 
 
 // 🔍 형성평가 정답 창에서 문제 다시 보기
-  function togglePeekFormativeQuestion() {
+function togglePeekFormativeQuestion() {
+    formativeState.questionSolved = false; // 다시 문제 화면으로 돌아왔을 때 조작 가능하도록 잠금 해제
     const victoryOverlay = document.getElementById('formativeVictoryOverlay');
     const returnBtn = document.getElementById('btnReturnToResultOverlay');
     const questionView = document.getElementById('hostQuestionView');
@@ -6548,7 +6617,13 @@ function spinFormativeStudentPicker(forcedNumber = null) {
     openYaNeoDuModal(formativeState.currentPickedNum || 1, true);
   }
 
-  function submitFormativeShortAnswer() {
+function submitFormativeShortAnswer() {
+    // 룰렛이 아직 돌고 있거나 번호가 안 뽑혔어도 주관식 채점이 막히지 않도록 자동 보정
+    if (formativeState.isSpinning) formativeState.isSpinning = false;
+    if (!formativeState.currentPickedNum) formativeState.currentPickedNum = 1;
+    // 혹시 문제 다시보기로 돌아온 상태라면 잠금 해제
+    formativeState.questionSolved = false;
+
     const inputEl = document.getElementById('formativeShortInput');
     const rawVal = (inputEl?.value || "").trim();
     if (!rawVal) return alert("학생이 발표한 정답 단어를 입력해 주세요!");
@@ -6569,18 +6644,28 @@ function spinFormativeStudentPicker(forcedNumber = null) {
   function forceRevealFormativeAnswer() {
     const q = normalizeQuestionObject(quizQuestions[currentQuestionIndex]);
     formativeState.questionSolved = true;
+    formativeState.isSpinning = false;
     let ansDisplay = q.options[q.answer_index];
     if (q.q_type === 'short') ansDisplay = q.answer_text;
     if (q.q_type === 'puzzle') ansDisplay = q.options.join(' ➔ ');
 
+    try { SoundFX.playCorrect(); } catch (e) {}
+
     document.getElementById('formativeVictoryRoundBadge').textContent = `문항 ${currentQuestionIndex + 1} / ${quizQuestions.length} 정답 공개`;
     document.getElementById('formativeVictoryHeroTitle').textContent = `💡 정답을 확인해 볼까요?`;
-    document.getElementById('formativeVictorySubStats').textContent = `오답 소거 완료 · 정답 자동 공개`;
+    document.getElementById('formativeVictorySubStats').textContent = `선생님 정답 바로 공개`;
     document.getElementById('formativeArcadeRewardText').textContent = `다음 문제에서 스트라이크에 도전하세요!`;
     document.getElementById('formativeVictoryAnswerText').textContent = `정답: ${ansDisplay}`;
     document.getElementById('formativeVictoryExplanationText').textContent = `💡 해설: ${q.explanation || '핵심 개념을 꼭 기억해 두세요!'}`;
-    document.getElementById('formativeVictoryOverlay').classList.remove('hidden');
+
+    // ✅ 핵심 해결: style.display = 'flex'를 함께 지정해야 숨겨진 오버레이가 즉시 팝업됩니다!
+    const victoryOver = document.getElementById('formativeVictoryOverlay');
+    if (victoryOver) {
+      victoryOver.classList.remove('hidden');
+      victoryOver.style.display = 'flex';
+    }
   }
+
 
 function handleFormativeBoardTouch(optionIdx, forcedShortCorrect = null) {
     if (currentGameMode === 'unplugged') {
@@ -7507,25 +7592,175 @@ function revealAnswerAndLeaderboard() {
         if (mpTimerBadge) mpTimerBadge.classList.add('hidden');
         if (narEl) narEl.textContent = "🎯 전체 학생의 캐릭터, 연속 콤보, 현재 상태 효과(🌟부스터·⚡잔상·👻유령·💀해골·👼천사)가 한눈에 표시됩니다!";
       } else if (currentGameMode === 'submarine') {
-        // 🕵️‍♂️ [마피아의 정답 전용] 한 화면 가득 상위 50% 용의자 & 연속 정답 콤보 & 실시간 투표 재판장 오픈!
-        if (leftCol) leftCol.className = "lg:col-span-12 bg-slate-950 border-2 border-rose-500/70 rounded-2xl p-4 flex flex-col justify-between space-y-2 shadow-2xl";
-        if (rightCol) rightCol.classList.add('hidden');
-        if (canvasWrap) canvasWrap.className = "relative w-full h-[380px] rounded-xl overflow-hidden bg-slate-900 border-2 border-slate-700 transition-all";
-        if (mvpBadge) mvpBadge.classList.add('hidden');
-        if (bgImg) bgImg.classList.add('hidden');
-        if (mpCtrl) mpCtrl.classList.add('hidden');
-        if (narEl) narEl.textContent = "🕵️‍♂️ 상위 50% 이내의 플레이어만 마피아 용의자로 지목할 수 있습니다! 연속 정답 기록을 보고 스마트폰으로 투표하세요!";
-        MafiaGameEngine.startVotingPhase();
-      } else {
-        if (leftCol) leftCol.className = "lg:col-span-6 bg-slate-950 border-2 border-indigo-500/50 rounded-2xl p-3 flex flex-col justify-between space-y-2 shadow-inner";
-        if (rightCol) rightCol.classList.remove('hidden');
-        if (canvasWrap) canvasWrap.className = "relative w-full h-[265px] rounded-xl overflow-hidden bg-slate-900 border border-slate-800 transition-all";
-        if (mvpBadge) mvpBadge.classList.remove('hidden');
-        if (bgImg) bgImg.classList.add('hidden');
-        if (mpCtrl) mpCtrl.classList.add('hidden');
-        if (mpTimerBadge) mpTimerBadge.classList.add('hidden');
-      }
+          MafiaGameEngine.initAssets();
+          const allSorted = Object.values(roomState.players || {})
+            .filter(u => u.online !== false)
+            .sort((a, b) => (b.score || 0) - (a.score || 0));
+          const totalCnt = allSorted.length;
+          const top25Cut = Math.max(1, Math.ceil(totalCnt * 0.25));
+          const candidates = MafiaGameEngine.getTop50Candidates().slice(0, 15);
 
+          // 1. 재판장 배경 사진 렌더링 (사진 파일이 있으면 사진 출력, 없으면 느와르 벽돌&스포트라이트 연출)
+          const bgImg = MafiaGameEngine.images.courtroomBgUrl;
+          if (bgImg && bgImg.complete && bgImg.naturalWidth > 0) {
+            ctx.drawImage(bgImg, 0, 0, W, H);
+            ctx.fillStyle = 'rgba(9, 13, 22, 0.55)';
+            ctx.fillRect(0, 0, W, H);
+          } else {
+            const nrGrad = ctx.createRadialGradient(W / 2, H / 3, 40, W / 2, H / 2, W * 0.7);
+            nrGrad.addColorStop(0, '#1e1b4b');
+            nrGrad.addColorStop(0.6, '#0f172a');
+            nrGrad.addColorStop(1, '#020617');
+            ctx.fillStyle = nrGrad;
+            ctx.fillRect(0, 0, W, H);
+
+            // 움직이는 탐정 스포트라이트 조명 2개
+            ctx.save();
+            const beamX1 = W * 0.3 + Math.sin(now * 0.0015) * 160;
+            const beamX2 = W * 0.7 + Math.cos(now * 0.0018) * 160;
+            ctx.fillStyle = 'rgba(250, 204, 21, 0.06)';
+            ctx.beginPath(); ctx.moveTo(W * 0.2, 0); ctx.lineTo(beamX1 - 90, H); ctx.lineTo(beamX1 + 90, H); ctx.closePath(); ctx.fill();
+            ctx.fillStyle = 'rgba(244, 63, 94, 0.06)';
+            ctx.beginPath(); ctx.moveTo(W * 0.8, 0); ctx.lineTo(beamX2 - 90, H); ctx.lineTo(beamX2 + 90, H); ctx.closePath(); ctx.fill();
+            ctx.restore();
+          }
+
+          // 2. 상단 폴리스라인 & 수사본부 전광판 헤더
+          const totalVoters = allSorted.length;
+          const votedCount = Object.keys(MafiaGameEngine.votesMap || {}).length;
+          const leakPct = Math.round((MafiaGameEngine.currentSpoilerChance ?? 1) * 100);
+
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+          ctx.fillRect(0, 0, W, 44);
+          ctx.fillStyle = '#facc15';
+          ctx.fillRect(0, 42, W, 3);
+
+          // 좌상단 탐정/마피아 대표 일러스트 아이콘(또는 사진)
+          const detImg = MafiaGameEngine.images.citizenCharUrl;
+          if (detImg && detImg.complete && detImg.naturalWidth > 0) {
+            ctx.drawImage(detImg, 12, 4, 34, 34);
+          }
+
+          ctx.textAlign = 'left';
+          ctx.fillStyle = '#fb7185';
+          ctx.font = '900 14px Pretendard, sans-serif';
+          ctx.fillText(`🕵️‍♂️ 마피아 특별수사본부 (상위 50% 용의자 ${candidates.length}명)   |   🗳️ 실시간 투표: ${votedCount} / ${totalVoters}명`, 16, 27);
+
+          ctx.textAlign = 'right';
+          ctx.fillStyle = '#fde047';
+          ctx.font = 'bold 12px Pretendard, sans-serif';
+          ctx.fillText(`📡 마피아 정답 유출률: ${leakPct}%   |   🏆 마피아 승리 커트라인: 1~${top25Cut}위(25%)`, W - 16, 27);
+
+          // 3. 용의자 수배 전단지(WANTED) 카드 그리드 (5열 x 3행)
+          const cols = 5, rows = 3;
+          const padX = 14, padY = 54;
+          const gapX = 10, gapY = 10;
+          const cellW = Math.floor((W - padX * 2 - gapX * (cols - 1)) / cols);
+          const cellH = Math.floor((H - padY - 66 - gapY * (rows - 1)) / rows);
+          const posterImg = MafiaGameEngine.images.suspectCardBgUrl;
+          const stampImg = MafiaGameEngine.images.stampSuspectUrl;
+
+          candidates.forEach((u, idx) => {
+            const c = idx % cols;
+            const r = Math.floor(idx / cols);
+            const x = padX + c * (cellW + gapX);
+            const y = padY + r * (cellH + gapY);
+
+            const isInTop25 = (idx < top25Cut);
+            const combo = u.comboStreak || 0;
+            const votes = MafiaGameEngine.voteCounts[u.id] || 0;
+
+            ctx.save();
+            // 수배 전단지 배경 이미지가 있으면 사용, 없으면 다크 느와르 수배지 스타일 렌더링
+            if (posterImg && posterImg.complete && posterImg.naturalWidth > 0) {
+              ctx.drawImage(posterImg, x, y, cellW, cellH);
+            } else {
+              ctx.fillStyle = isInTop25 ? 'rgba(69, 10, 10, 0.82)' : 'rgba(15, 23, 42, 0.88)';
+              ctx.strokeStyle = votes > 0 ? '#f43f5e' : (isInTop25 ? '#f59e0b' : '#475569');
+              ctx.lineWidth = votes > 0 ? 3 : 1.5;
+              ctx.beginPath();
+              ctx.roundRect(x, y, cellW, cellH, 10);
+              ctx.fill();
+              ctx.stroke();
+
+              // 상단 WANTED 바
+              ctx.fillStyle = isInTop25 ? 'rgba(245, 158, 11, 0.25)' : 'rgba(51, 65, 85, 0.5)';
+              ctx.fillRect(x + 2, y + 2, cellW - 4, 16);
+              ctx.fillStyle = isInTop25 ? '#fde047' : '#94a3b8';
+              ctx.font = '900 9px Pretendard, sans-serif';
+              ctx.textAlign = 'left';
+              ctx.fillText(isInTop25 ? '👑 TOP 25% DANGER' : '🔎 SUSPECT FILE', x + 8, y + 13);
+            }
+
+            // 좌측 용의자 캐릭터 스프라이트
+            const charIdx = u.charIndex !== undefined ? u.charIndex : idx % 30;
+            ctx.save();
+            ctx.translate(x + 26, y + cellH - 5);
+            ctx.scale(0.70, 0.70);
+            if (!EduSprite.draw(ctx, charIdx, 0, 0, combo >= 3)) {
+              ctx.font = '30px sans-serif'; ctx.textAlign = 'center';
+              ctx.fillText(u.avatar || '🕵️‍♂️', 0, -12);
+            }
+            ctx.restore();
+
+            // 우측 용의자 정보
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '900 12px Pretendard, sans-serif';
+            const cleanName = String(u.name || '').replace(/\(봇\)/g, '').slice(0, 5);
+            ctx.fillText(`${idx + 1}위. ${cleanName}`, x + 48, y + 32);
+
+            ctx.fillStyle = combo >= 3 ? '#fb923c' : '#cbd5e1';
+            ctx.font = 'bold 10.5px Pretendard, sans-serif';
+            ctx.fillText(combo >= 3 ? `🚨 ${combo}연속 정답!` : `🔥 ${combo}연속 정답`, x + 48, y + 48);
+
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = 'bold 10px Pretendard, sans-serif';
+            ctx.fillText(`${(u.score || 0).toLocaleString()}점`, x + 48, y + 63);
+
+            // 득표 시 빨간색 타겟 배지 또는 도장 이미지 표시
+            if (votes > 0) {
+              if (stampImg && stampImg.complete && stampImg.naturalWidth > 0) {
+                ctx.drawImage(stampImg, x + cellW - 46, y + 18, 40, 40);
+              }
+              ctx.fillStyle = '#e11d48';
+              ctx.beginPath();
+              ctx.roundRect(x + cellW - 44, y + 4, 38, 18, 5);
+              ctx.fill();
+              ctx.fillStyle = '#ffffff';
+              ctx.font = '900 10.5px Pretendard, sans-serif';
+              ctx.textAlign = 'center';
+              ctx.fillText(`🎯${votes}표`, x + cellW - 25, y + 16);
+            }
+            ctx.restore();
+          });
+
+          // 4. 하단 재판 판결문 브리핑 바
+          ctx.fillStyle = 'rgba(9, 13, 22, 0.95)';
+          ctx.fillRect(0, H - 56, W, 56);
+          ctx.strokeStyle = '#f43f5e';
+          ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(0, H - 56); ctx.lineTo(W, H - 56); ctx.stroke();
+
+          ctx.textAlign = 'center';
+          if (MafiaGameEngine.finalResultBanner) {
+            ctx.fillStyle = '#fde047';
+            ctx.font = '900 16px Pretendard, sans-serif';
+            ctx.fillText(MafiaGameEngine.finalResultBanner, W / 2, H - 24);
+          } else if (MafiaGameEngine.lastAccusedInfo) {
+            ctx.fillStyle = MafiaGameEngine.lastAccusedInfo.color;
+            ctx.font = '900 15px Pretendard, sans-serif';
+            ctx.fillText(MafiaGameEngine.lastAccusedInfo.title, W / 2, H - 32);
+            ctx.fillStyle = '#e2e8f0';
+            ctx.font = 'bold 12px Pretendard, sans-serif';
+            ctx.fillText(MafiaGameEngine.lastAccusedInfo.sub, W / 2, H - 12);
+          } else {
+            ctx.fillStyle = '#38bdf8';
+            ctx.font = 'bold 14px Pretendard, sans-serif';
+            ctx.fillText(`⏳ 스마트폰 수배 전단지에서 가장 의심스러운 상위 50% 용의자를 터치해 지목하세요!`, W / 2, H - 22);
+          }
+        }
+        
       if (currentGameMode === 'masterpiece') {
         SoundFX.playBGM('masterpiece', 0.35); // 🎨 명화 긁기 화면 진입 시 masterpiece.wav 재생 (오타 수정 완료)
       }
